@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 import java.util.Collections;
 import java.util.List;
 
+import org.example.dao.TraineeDAO;
 import org.example.dao.TrainerDAO;
 import org.example.dao.TrainingDAO;
 import org.example.dto.credentials.CredentialsUpdateDTO;
@@ -22,45 +23,50 @@ import org.example.model.User;
 import org.example.utils.CredentialsGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+@ExtendWith(SpringExtension.class)
+@ContextConfiguration(classes = {TrainerService.class})
 class TrainerServiceTest {
 
-    @Mock
+    @MockBean
+    private TraineeDAO traineeDAO;
+
+    @MockBean
     private TrainerDAO trainerDAO;
 
-    @Mock
+    @MockBean
     private TrainingDAO trainingDAO;
 
-    @Mock
+    @MockBean
     private CredentialsGenerator credentialsGenerator;
 
-    @InjectMocks
+    @Autowired
     private TrainerService trainerService;
 
     private Trainer trainer;
 
     @BeforeEach
     void setUp() throws Exception {
-        try (AutoCloseable autoCloseable = MockitoAnnotations.openMocks(this)) {
-            User user = User.builder()
-                    .isActive(true)
-                    .lastName("Rossi")
-                    .firstName("Valentino")
-                    .username("Valentino.Rossi")
-                    .password("9876543210")
-                    .build();
+        User user = User.builder()
+                .isActive(true)
+                .lastName("Rossi")
+                .firstName("Valentino")
+                .username("Valentino.Rossi")
+                .password("9876543210")
+                .build();
 
-            trainer = Trainer.builder()
-                    .user(user)
-                    .specialization(TrainingType.builder()
-                            .id(1L)
-                            .trainingTypeName(TrainingTypeName.AEROBIC)
-                            .build())
-                    .build();
-        }
+        trainer = Trainer.builder()
+                .user(user)
+                .specialization(TrainingType.builder()
+                        .id(1L)
+                        .trainingTypeName(TrainingTypeName.AEROBIC)
+                        .build())
+                .build();
     }
 
     @Test

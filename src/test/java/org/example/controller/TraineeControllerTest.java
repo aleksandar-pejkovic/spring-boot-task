@@ -19,39 +19,41 @@ import org.example.model.User;
 import org.example.service.TraineeService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+@ExtendWith(SpringExtension.class)
+@ContextConfiguration(classes = {TraineeController.class})
 public class TraineeControllerTest {
 
-    @InjectMocks
+    @Autowired
     private TraineeController traineeController;
 
-    @Mock
+    @MockBean
     private TraineeService traineeService;
 
     private Trainee trainee;
 
     @BeforeEach
     void setUp() throws Exception {
-        try (AutoCloseable autoCloseable = MockitoAnnotations.openMocks(this)) {
-            User user = User.builder()
-                    .isActive(true)
-                    .lastName("Doe")
-                    .firstName("John")
-                    .username("John.Doe")
-                    .password("0123456789")
-                    .build();
+        User user = User.builder()
+                .isActive(true)
+                .lastName("Doe")
+                .firstName("John")
+                .username("John.Doe")
+                .password("0123456789")
+                .build();
 
-            trainee = Trainee.builder()
-                    .user(user)
-                    .address("11000 Belgrade")
-                    .dateOfBirth(new Date())
-                    .trainerList(new ArrayList<>())
-                    .build();
-        }
+        trainee = Trainee.builder()
+                .user(user)
+                .address("11000 Belgrade")
+                .dateOfBirth(new Date())
+                .trainerList(new ArrayList<>())
+                .build();
     }
 
     @Test

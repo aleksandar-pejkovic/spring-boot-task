@@ -16,26 +16,23 @@ import org.example.dto.trainingType.TrainingTypeDTO;
 import org.example.enums.TrainingTypeName;
 import org.example.model.Training;
 import org.example.service.TrainingService;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+@ExtendWith(SpringExtension.class)
+@ContextConfiguration(classes = {TrainingController.class})
 class TrainingControllerTest {
 
-    @InjectMocks
+    @Autowired
     private TrainingController trainingController;
 
-    @Mock
+    @MockBean
     private TrainingService trainingService;
-
-    @BeforeEach
-    void setUp() throws Exception {
-        try (AutoCloseable autoCloseable = MockitoAnnotations.openMocks(this)) {
-        }
-    }
 
     @Test
     void getTraineeTrainingsList() {

@@ -25,23 +25,27 @@ import org.example.model.TrainingType;
 import org.example.model.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+@ExtendWith(SpringExtension.class)
+@ContextConfiguration(classes = {TrainingService.class})
 class TrainingServiceTest {
 
-    @Mock
+    @MockBean
     private TrainingDAO trainingDAO;
 
-    @Mock
+    @MockBean
     private TraineeDAO traineeDAO;
 
-    @Mock
+    @MockBean
     private TrainerDAO trainerDAO;
 
-    @InjectMocks
+    @Autowired
     private TrainingService trainingService;
 
     private Training training;
@@ -52,48 +56,46 @@ class TrainingServiceTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        try (AutoCloseable autoCloseable = MockitoAnnotations.openMocks(this)) {
-            User user1 = User.builder()
-                    .isActive(true)
-                    .lastName("Biaggi")
-                    .firstName("Max")
-                    .username("Max.Biaggi")
-                    .password("0123456789")
-                    .build();
+        User user1 = User.builder()
+                .isActive(true)
+                .lastName("Biaggi")
+                .firstName("Max")
+                .username("Max.Biaggi")
+                .password("0123456789")
+                .build();
 
-            User user2 = User.builder()
-                    .isActive(true)
-                    .lastName("Storrari")
-                    .firstName("Matteo")
-                    .username("Matteo.Storrari")
-                    .password("0123456789")
-                    .build();
+        User user2 = User.builder()
+                .isActive(true)
+                .lastName("Storrari")
+                .firstName("Matteo")
+                .username("Matteo.Storrari")
+                .password("0123456789")
+                .build();
 
-            trainee = Trainee.builder()
-                    .user(user1)
-                    .address("11000 Belgrade")
-                    .dateOfBirth(new Date())
-                    .trainerList(new ArrayList<>())
-                    .trainingList(new ArrayList<>())
-                    .build();
+        trainee = Trainee.builder()
+                .user(user1)
+                .address("11000 Belgrade")
+                .dateOfBirth(new Date())
+                .trainerList(new ArrayList<>())
+                .trainingList(new ArrayList<>())
+                .build();
 
-            trainer = Trainer.builder()
-                    .user(user2)
-                    .traineeList(new ArrayList<>())
-                    .trainingList(new ArrayList<>())
-                    .build();
+        trainer = Trainer.builder()
+                .user(user2)
+                .traineeList(new ArrayList<>())
+                .trainingList(new ArrayList<>())
+                .build();
 
-            training = new Training();
-            training.setId(1L);
-            training.setTrainee(trainee);
-            training.setTrainer(trainer);
-            training.setTrainingType(
-                    TrainingType.builder()
-                            .id(1L)
-                            .trainingTypeName(TrainingTypeName.AEROBIC)
-                            .build()
-            );
-        }
+        training = new Training();
+        training.setId(1L);
+        training.setTrainee(trainee);
+        training.setTrainer(trainer);
+        training.setTrainingType(
+                TrainingType.builder()
+                        .id(1L)
+                        .trainingTypeName(TrainingTypeName.AEROBIC)
+                        .build()
+        );
     }
 
     @Test

@@ -20,40 +20,42 @@ import org.example.model.User;
 import org.example.utils.CredentialsGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+@ExtendWith(SpringExtension.class)
+@ContextConfiguration(classes = {TraineeService.class})
 class TraineeServiceTest {
 
-    @Mock
+    @MockBean
     private TraineeDAO traineeDAO;
 
-    @Mock
+    @MockBean
     private CredentialsGenerator credentialsGenerator;
 
-    @InjectMocks
+    @Autowired
     private TraineeService traineeService;
 
     private Trainee trainee;
 
     @BeforeEach
     void setUp() throws Exception {
-        try (AutoCloseable autoCloseable = MockitoAnnotations.openMocks(this)) {
-            User user = User.builder()
-                    .isActive(true)
-                    .lastName("Biaggi")
-                    .firstName("Max")
-                    .username("Max.Biaggi")
-                    .password("0123456789")
-                    .build();
+        User user = User.builder()
+                .isActive(true)
+                .lastName("Biaggi")
+                .firstName("Max")
+                .username("Max.Biaggi")
+                .password("0123456789")
+                .build();
 
-            trainee = Trainee.builder()
-                    .user(user)
-                    .address("11000 Belgrade")
-                    .dateOfBirth(new Date())
-                    .build();
-        }
+        trainee = Trainee.builder()
+                .user(user)
+                .address("11000 Belgrade")
+                .dateOfBirth(new Date())
+                .build();
     }
 
     @Test

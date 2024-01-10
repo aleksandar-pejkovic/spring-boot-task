@@ -23,44 +23,46 @@ import org.example.model.User;
 import org.example.service.TrainerService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+@ExtendWith(SpringExtension.class)
+@ContextConfiguration(classes = {TrainerController.class})
 class TrainerControllerTest {
 
-    @InjectMocks
+    @Autowired
     private TrainerController trainerController;
 
-    @Mock
+    @MockBean
     private TrainerService trainerService;
 
     private Trainer trainer;
 
     @BeforeEach
     void setUp() throws Exception {
-        try (AutoCloseable autoCloseable = MockitoAnnotations.openMocks(this)) {
-            User user = User.builder()
-                    .isActive(true)
-                    .lastName("Doe")
-                    .firstName("John")
-                    .username("John.Doe")
-                    .password("0123456789")
-                    .build();
+        User user = User.builder()
+                .isActive(true)
+                .lastName("Doe")
+                .firstName("John")
+                .username("John.Doe")
+                .password("0123456789")
+                .build();
 
-            TrainingType trainingType = TrainingType.builder()
-                    .trainingTypeName(TrainingTypeName.AEROBIC)
-                    .trainerList(new ArrayList<>())
-                    .build();
+        TrainingType trainingType = TrainingType.builder()
+                .trainingTypeName(TrainingTypeName.AEROBIC)
+                .trainerList(new ArrayList<>())
+                .build();
 
-            trainer = Trainer.builder()
-                    .specialization(trainingType)
-                    .user(user)
-                    .traineeList(new ArrayList<>())
-                    .trainingList(new ArrayList<>())
-                    .build();
-        }
+        trainer = Trainer.builder()
+                .specialization(trainingType)
+                .user(user)
+                .traineeList(new ArrayList<>())
+                .trainingList(new ArrayList<>())
+                .build();
     }
 
     @Test

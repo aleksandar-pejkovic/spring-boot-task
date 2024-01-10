@@ -10,30 +10,27 @@ import java.util.Collections;
 
 import org.example.dto.credentials.CredentialsDTO;
 import org.example.enums.RoleName;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+@ExtendWith(SpringExtension.class)
+@ContextConfiguration(classes = {LoginController.class})
 class LoginControllerTest {
 
-    @InjectMocks
+    @Autowired
     private LoginController loginController;
 
-    @Mock
+    @MockBean
     private AuthenticationManager authenticationManager;
-
-    @BeforeEach
-    void setUp() throws Exception {
-        try (AutoCloseable autoCloseable = MockitoAnnotations.openMocks(this)) {
-        }
-    }
 
     @Test
     void loginSuccess() throws AuthenticationException {

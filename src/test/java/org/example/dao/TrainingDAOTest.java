@@ -28,29 +28,36 @@ import org.hibernate.query.criteria.JpaPath;
 import org.hibernate.query.criteria.JpaRoot;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
 
+@ExtendWith(SpringExtension.class)
+@ContextConfiguration(classes = {TrainingDAO.class})
 class TrainingDAOTest {
 
-    @Mock
+    @MockBean
     private SessionFactory sessionFactory;
 
-    @Mock
+    @MockBean
     private Session session;
 
-    @InjectMocks
+    @Autowired
     private TrainingDAO trainingDAO;
 
     @Captor
-    ArgumentCaptor<CriteriaQuery<Training>> criteriaQueryCaptor;
+    private ArgumentCaptor<CriteriaQuery<Training>> criteriaQueryCaptor;
 
     private Training training;
 

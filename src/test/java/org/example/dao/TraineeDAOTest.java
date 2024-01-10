@@ -3,7 +3,6 @@ package org.example.dao;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
@@ -22,39 +21,41 @@ import org.hibernate.SessionFactory;
 import org.hibernate.query.Query;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+@ExtendWith(SpringExtension.class)
+@ContextConfiguration(classes = {TraineeDAO.class})
 class TraineeDAOTest {
 
-    @Mock
+    @MockBean
     private SessionFactory sessionFactory;
 
-    @Mock
+    @MockBean
     private Session session;
 
-    @InjectMocks
+    @Autowired
     private TraineeDAO traineeDAO;
 
     private Trainee testTrainee;
 
     @BeforeEach
     void setUp() throws Exception {
-        try (AutoCloseable autoCloseable = MockitoAnnotations.openMocks(this)) {
-            when(sessionFactory.getCurrentSession()).thenReturn(session);
-            testTrainee = Trainee.builder()
-                    .address("11000 Belgrade")
-                    .dateOfBirth(new java.util.Date())
-                    .user(User.builder()
-                            .isActive(true)
-                            .lastName("Biaggi")
-                            .firstName("Max")
-                            .username("Max.Biaggi")
-                            .password("0123456789")
-                            .build())
-                    .build();
-        }
+        when(sessionFactory.getCurrentSession()).thenReturn(session);
+        testTrainee = Trainee.builder()
+                .address("11000 Belgrade")
+                .dateOfBirth(new java.util.Date())
+                .user(User.builder()
+                        .isActive(true)
+                        .lastName("Biaggi")
+                        .firstName("Max")
+                        .username("Max.Biaggi")
+                        .password("0123456789")
+                        .build())
+                .build();
     }
 
     @Test

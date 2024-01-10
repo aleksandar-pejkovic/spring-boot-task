@@ -23,41 +23,43 @@ import org.hibernate.SessionFactory;
 import org.hibernate.query.Query;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+@ExtendWith(SpringExtension.class)
+@ContextConfiguration(classes = {TrainerDAO.class})
 class TrainerDAOTest {
 
-    @Mock
+    @MockBean
     private SessionFactory sessionFactory;
 
-    @Mock
+    @MockBean
     private Session session;
 
-    @InjectMocks
+    @Autowired
     private TrainerDAO trainerDAO;
 
     private Trainer testTrainer;
 
     @BeforeEach
     void setUp() throws Exception {
-        try (AutoCloseable autoCloseable = MockitoAnnotations.openMocks(this)) {
-            when(sessionFactory.getCurrentSession()).thenReturn(session);
-            testTrainer = Trainer.builder()
-                    .specialization(TrainingType.builder()
-                            .id(1L)
-                            .trainingTypeName(TrainingTypeName.AEROBIC)
-                            .build())
-                    .user(User.builder()
-                            .isActive(true)
-                            .lastName("Smith")
-                            .firstName("John")
-                            .username("John.Smith")
-                            .password("password123")
-                            .build())
-                    .build();
-        }
+        when(sessionFactory.getCurrentSession()).thenReturn(session);
+        testTrainer = Trainer.builder()
+                .specialization(TrainingType.builder()
+                        .id(1L)
+                        .trainingTypeName(TrainingTypeName.AEROBIC)
+                        .build())
+                .user(User.builder()
+                        .isActive(true)
+                        .lastName("Smith")
+                        .firstName("John")
+                        .username("John.Smith")
+                        .password("password123")
+                        .build())
+                .build();
     }
 
     @Test
