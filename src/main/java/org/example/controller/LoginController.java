@@ -28,16 +28,12 @@ public class LoginController {
     @PostMapping("/login")
     public ResponseEntity<Boolean> login(@RequestBody CredentialsDTO credentialsDTO) {
         log.info("Endpoint '/api/login' was called to authenticate trainee");
-        try {
-            Authentication authenticationRequest = UsernamePasswordAuthenticationToken.unauthenticated(
-                    credentialsDTO.getUsername(),
-                    credentialsDTO.getPassword());
+        Authentication authenticationRequest = UsernamePasswordAuthenticationToken.unauthenticated(
+                credentialsDTO.getUsername(),
+                credentialsDTO.getPassword());
 
-            Authentication authenticationResponse = authenticationManager.authenticate(authenticationRequest);
+        Authentication authenticationResponse = authenticationManager.authenticate(authenticationRequest);
 
-            return ResponseEntity.ok(authenticationResponse.isAuthenticated());
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(false);
-        }
+        return ResponseEntity.ok(authenticationResponse.isAuthenticated());
     }
 }
