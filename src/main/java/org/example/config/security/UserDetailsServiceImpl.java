@@ -1,4 +1,4 @@
-package org.example.config;
+package org.example.config.security;
 
 import org.example.dao.UserDAO;
 import org.example.model.User;
