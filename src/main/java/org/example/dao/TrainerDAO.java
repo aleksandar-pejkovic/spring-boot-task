@@ -35,18 +35,19 @@ public class TrainerDAO extends AbstractDAO<Trainer> {
     }
 
     public List<Trainer> getNotAssignedTrainers(String traineeUsername) {
-        Session session = sessionFactory.getCurrentSession();
+        try (Session session = sessionFactory.openSession()) {
 
-        String hql = "SELECT t FROM Trainer t "
-                + "LEFT JOIN t.traineeList te "
-                + "WHERE te IS NULL "
-                + "OR te.user.username = :traineeUsername "
-                + "AND t.user.isActive = true";
+            String hql = "SELECT t FROM Trainer t "
+                    + "LEFT JOIN t.traineeList te "
+                    + "WHERE te IS NULL "
+                    + "OR te.user.username = :traineeUsername "
+                    + "AND t.user.isActive = true";
 
-        Query<Trainer> query = session.createQuery(hql, Trainer.class);
-        query.setParameter("traineeUsername", traineeUsername);
+            Query<Trainer> query = session.createQuery(hql, Trainer.class);
+            query.setParameter("traineeUsername", traineeUsername);
 
-        return query.getResultList();
+            return query.getResultList();
+        }
     }
 
     public List<Trainer> getAllTrainers() {

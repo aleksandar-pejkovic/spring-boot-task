@@ -1,6 +1,8 @@
 package org.example.utils;
 
-import lombok.extern.slf4j.Slf4j;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.apache.commons.lang3.RandomStringUtils;
 import org.example.model.User;
 import org.hibernate.Session;
@@ -10,8 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
 @Slf4j
@@ -58,10 +59,11 @@ public class CredentialsGenerator {
     }
 
     private long fetchCountForMatchingUsername(String baseUsername) {
-        Session session = sessionFactory.getCurrentSession();
-        Query<Long> query = session.createQuery("SELECT COUNT(*) FROM User WHERE username LIKE :baseUsername",
-                Long.class);
-        query.setParameter("baseUsername", baseUsername + "%");
-        return query.uniqueResult();
+        try (Session session = sessionFactory.openSession()) {
+            Query<Long> query = session.createQuery("SELECT COUNT(*) FROM User WHERE username LIKE :baseUsername",
+                    Long.class);
+            query.setParameter("baseUsername", baseUsername + "%");
+            return query.uniqueResult();
+        }
     }
 }

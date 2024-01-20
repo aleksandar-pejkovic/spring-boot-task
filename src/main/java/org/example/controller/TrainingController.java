@@ -22,7 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RestController
-@RequestMapping(value = "/api/trainings", consumes = {"application/JSON"}, produces = {"application/JSON"})
+@RequestMapping(value = "/api/trainings")
 public class TrainingController {
 
     private final TrainingService trainingService;

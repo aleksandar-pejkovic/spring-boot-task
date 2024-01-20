@@ -14,10 +14,11 @@ public class UserDAO extends AbstractDAO<User> {
     }
 
     public User findByUsername(String username) {
-        Session session = sessionFactory.getCurrentSession();
-        String hqlQuery = "FROM User u where u.username = :username";
-        Query<User> query = session.createQuery(hqlQuery, User.class);
-        query.setParameter("username", username);
-        return query.getSingleResult();
+        try (Session session = sessionFactory.openSession()) {
+            String hqlQuery = "FROM User u where u.username = :username";
+            Query<User> query = session.createQuery(hqlQuery, User.class);
+            query.setParameter("username", username);
+            return query.getSingleResult();
+        }
     }
 }

@@ -15,7 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RestController
-@RequestMapping(value = "/api", consumes = {"application/JSON"}, produces = {"application/JSON"})
+@RequestMapping(value = "/api")
 public class LoginController {
 
     private final AuthenticationManager authenticationManager;

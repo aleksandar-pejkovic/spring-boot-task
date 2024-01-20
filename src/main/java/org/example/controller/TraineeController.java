@@ -26,7 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RestController
-@RequestMapping(value = "/api/trainees", consumes = {"application/JSON"}, produces = {"application/JSON"})
+@RequestMapping(value = "/api/trainees")
 public class TraineeController {
 
     private final TraineeService traineeService;
