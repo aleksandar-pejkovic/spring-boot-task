@@ -1,6 +1,6 @@
 package org.example.config.security;
 
-import org.example.dao.UserDAO;
+import org.example.repository.UserRepository;
 import org.example.model.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -13,13 +13,13 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserDetailsServiceImpl implements UserDetailsService {
 
     @Autowired
-    private UserDAO userDAO;
+    private UserRepository userRepository;
 
     @Transactional(readOnly = true)
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 
-        User storedUser = userDAO.findByUsername(username);
+        User storedUser = userRepository.findByUsername(username);
 
         return org.springframework.security.core.userdetails.User.builder()
                 .username(storedUser.getUsername())

@@ -9,10 +9,10 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>org.example</groupId>
-    <artifactId>RestTask</artifactId>
+    <artifactId>SpringBootTask</artifactId>
     <version>1.0-SNAPSHOT</version>
 
-    <name>RestTask</name>
+    <name>SpringBootTask</name>
     <url>http://maven.apache.org</url>
 
     <properties>

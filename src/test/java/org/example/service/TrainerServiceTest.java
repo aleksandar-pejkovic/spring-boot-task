@@ -11,15 +11,15 @@ import static org.mockito.Mockito.when;
 import java.util.Collections;
 import java.util.List;
 
-import org.example.dao.TraineeDAO;
-import org.example.dao.TrainerDAO;
-import org.example.dao.TrainingDAO;
 import org.example.dto.credentials.CredentialsUpdateDTO;
 import org.example.dto.trainer.TrainerUpdateDTO;
 import org.example.enums.TrainingTypeName;
 import org.example.model.Trainer;
 import org.example.model.TrainingType;
 import org.example.model.User;
+import org.example.repository.TraineeRepository;
+import org.example.repository.TrainerRepository;
+import org.example.repository.TrainingRepository;
 import org.example.utils.CredentialsGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,13 +34,13 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 class TrainerServiceTest {
 
     @MockBean
-    private TraineeDAO traineeDAO;
+    private TraineeRepository traineeRepository;
 
     @MockBean
-    private TrainerDAO trainerDAO;
+    private TrainerRepository trainerRepository;
 
     @MockBean
-    private TrainingDAO trainingDAO;
+    private TrainingRepository trainingRepository;
 
     @MockBean
     private CredentialsGenerator credentialsGenerator;
@@ -77,17 +77,17 @@ class TrainerServiceTest {
                 .trainingTypeName(TrainingTypeName.AEROBIC)
                 .build();
 
-        when(trainingDAO.findTrainingTypeByName(any())).thenReturn(trainingType);
+        when(trainingRepository.findTrainingTypeByName(any())).thenReturn(trainingType);
         when(credentialsGenerator.generateUsername(any())).thenReturn("Valentino.Rossi");
         when(credentialsGenerator.generateRandomPassword()).thenReturn("9876543210");
-        when(trainerDAO.saveTrainer(any())).thenReturn(trainer);
+        when(trainerRepository.save(any())).thenReturn(trainer);
 
         // Act
         Trainer result = trainerService.createTrainer(trainer.getUser().getFirstName(),
                 trainer.getUser().getLastName(), trainer.getSpecialization().getTrainingTypeName());
 
         // Assert
-        verify(trainerDAO, times(1)).saveTrainer(any());
+        verify(trainerRepository, times(1)).save(any());
     }
 
     @Test
@@ -95,13 +95,13 @@ class TrainerServiceTest {
         // Arrange
         String username = "testUser";
         Trainer expectedTrainer = new Trainer();
-        when(trainerDAO.findTrainerByUsername(username)).thenReturn(expectedTrainer);
+        when(trainerRepository.findTrainerByUsername(username)).thenReturn(expectedTrainer);
 
         // Act
         Trainer result = trainerService.getTrainerByUsername(username);
 
         // Assert
-        verify(trainerDAO, times(1)).findTrainerByUsername(username);
+        verify(trainerRepository, times(1)).findTrainerByUsername(username);
         assertEquals(expectedTrainer, result);
     }
 
@@ -115,13 +115,13 @@ class TrainerServiceTest {
                 .build();
 
         when(trainerService.getTrainerByUsername(credentialsUpdateDTO.getUsername())).thenReturn(trainer);
-        when(trainerDAO.updateTrainer(trainer)).thenReturn(trainer);
+        when(trainerRepository.save(trainer)).thenReturn(trainer);
 
         // Act
         Trainer result = trainerService.changePassword(credentialsUpdateDTO);
 
         // Assert
-        verify(trainerDAO, times(1)).updateTrainer(trainer);
+        verify(trainerRepository, times(1)).save(trainer);
         assertEquals(credentialsUpdateDTO.getNewPassword(), result.getPassword());
     }
 
@@ -133,9 +133,9 @@ class TrainerServiceTest {
                 .trainingTypeName(TrainingTypeName.AEROBIC)
                 .build();
 
-        when(trainerDAO.findTrainerByUsername(any())).thenReturn(trainer);
-        when(trainingDAO.findTrainingTypeByName(any())).thenReturn(trainingType);
-        when(trainerDAO.updateTrainer(trainer)).thenReturn(trainer);
+        when(trainerRepository.findTrainerByUsername(any())).thenReturn(trainer);
+        when(trainingRepository.findTrainingTypeByName(any())).thenReturn(trainingType);
+        when(trainerRepository.save(trainer)).thenReturn(trainer);
         TrainerUpdateDTO trainerUpdateDTO = TrainerUpdateDTO.builder()
                 .username(trainer.getUsername())
                 .firstName(trainer.getUser().getFirstName())
@@ -148,20 +148,20 @@ class TrainerServiceTest {
         trainerService.updateTrainer(trainerUpdateDTO);
 
         // Assert
-        verify(trainerDAO, times(1)).updateTrainer(trainer);
+        verify(trainerRepository, times(1)).save(trainer);
     }
 
     @Test
     void toggleTrainerActivationTest() {
         // Arrange
-        when(trainerDAO.findTrainerByUsername(anyString())).thenReturn(trainer);
-        when(trainerDAO.updateTrainer(trainer)).thenReturn(trainer);
+        when(trainerRepository.findTrainerByUsername(anyString())).thenReturn(trainer);
+        when(trainerRepository.save(trainer)).thenReturn(trainer);
 
         // Act
         boolean result = trainerService.toggleTrainerActivation(trainer.getUsername(), trainer.getUser().isActive());
 
         // Assert
-        verify(trainerDAO, times(1)).updateTrainer(trainer);
+        verify(trainerRepository, times(1)).save(trainer);
         assertTrue(result);
     }
 
@@ -170,13 +170,13 @@ class TrainerServiceTest {
         // Arrange
         String username = "testUser";
         String password = "testPassword";
-        when(trainerDAO.deleteTrainerByUsername(username)).thenReturn(true);
+        when(trainerRepository.deleteTrainerByUsername(username)).thenReturn(true);
 
         // Act
         boolean result = trainerService.deleteTrainer(username, password);
 
         // Assert
-        verify(trainerDAO, times(1)).deleteTrainerByUsername(username);
+        verify(trainerRepository, times(1)).deleteTrainerByUsername(username);
         assertTrue(result);
     }
 
@@ -186,13 +186,13 @@ class TrainerServiceTest {
         String traineeUsername = "traineeUser";
         String password = "testPassword";
         List<Trainer> expectedTrainers = Collections.singletonList(new Trainer());
-        when(trainerDAO.getNotAssignedTrainers(traineeUsername)).thenReturn(expectedTrainers);
+        when(trainerRepository.getNotAssignedTrainers(traineeUsername)).thenReturn(expectedTrainers);
 
         // Act
         List<Trainer> result = trainerService.getNotAssignedTrainerList(traineeUsername);
 
         // Assert
-        verify(trainerDAO, times(1)).getNotAssignedTrainers(traineeUsername);
+        verify(trainerRepository, times(1)).getNotAssignedTrainers(traineeUsername);
         assertEquals(expectedTrainers, result);
     }
 
@@ -200,13 +200,13 @@ class TrainerServiceTest {
     void getAllTrainers() {
         // Arrange
         List<Trainer> expectedTrainers = Collections.singletonList(new Trainer());
-        when(trainerDAO.getAllTrainers()).thenReturn(expectedTrainers);
+        when(trainerRepository.findAll()).thenReturn(expectedTrainers);
 
         // Act
         List<Trainer> result = trainerService.getAllTrainers();
 
         // Assert
-        verify(trainerDAO, times(1)).getAllTrainers();
+        verify(trainerRepository, times(1)).findAll();
         assertEquals(expectedTrainers, result);
     }
 

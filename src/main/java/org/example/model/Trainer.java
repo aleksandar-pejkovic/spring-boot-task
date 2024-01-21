@@ -26,7 +26,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Builder
-public class Trainer implements AbstractEntity {
+public class Trainer {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

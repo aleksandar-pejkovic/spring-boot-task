@@ -12,11 +12,11 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
-import org.example.dao.TraineeDAO;
 import org.example.dto.credentials.CredentialsUpdateDTO;
 import org.example.dto.trainee.TraineeUpdateDTO;
 import org.example.model.Trainee;
 import org.example.model.User;
+import org.example.repository.TraineeRepository;
 import org.example.utils.CredentialsGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,7 +31,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 class TraineeServiceTest {
 
     @MockBean
-    private TraineeDAO traineeDAO;
+    private TraineeRepository traineeRepository;
 
     @MockBean
     private CredentialsGenerator credentialsGenerator;
@@ -63,7 +63,7 @@ class TraineeServiceTest {
         // Arrange
         when(credentialsGenerator.generateUsername(any())).thenReturn("Max.Biaggi");
         when(credentialsGenerator.generateRandomPassword()).thenReturn("0123456789");
-        when(traineeDAO.saveTrainee(any())).thenReturn(trainee);
+        when(traineeRepository.save(any())).thenReturn(trainee);
 
         // Act
         Trainee result = traineeService.createTrainee(
@@ -74,7 +74,7 @@ class TraineeServiceTest {
         );
 
         // Assert
-        verify(traineeDAO, times(1)).saveTrainee(any());
+        verify(traineeRepository, times(1)).save(any());
         assertEquals("Max.Biaggi", result.getUsername());
         assertEquals("0123456789", result.getPassword());
     }
@@ -84,13 +84,13 @@ class TraineeServiceTest {
         // Arrange
         String username = "testUser";
         Trainee expectedTrainee = new Trainee();
-        when(traineeDAO.findTraineeByUsername(username)).thenReturn(expectedTrainee);
+        when(traineeRepository.findTraineeByUsername(username)).thenReturn(expectedTrainee);
 
         // Act
         Trainee result = traineeService.getTraineeByUsername(username);
 
         // Assert
-        verify(traineeDAO, times(1)).findTraineeByUsername(username);
+        verify(traineeRepository, times(1)).findTraineeByUsername(username);
         assertEquals(expectedTrainee, result);
     }
 
@@ -104,21 +104,21 @@ class TraineeServiceTest {
                 .build();
 
         when(traineeService.getTraineeByUsername(credentialsUpdateDTO.getUsername())).thenReturn(trainee);
-        when(traineeDAO.updateTrainee(trainee)).thenReturn(trainee);
+        when(traineeRepository.save(trainee)).thenReturn(trainee);
 
         // Act
         Trainee result = traineeService.changePassword(credentialsUpdateDTO);
 
         // Assert
-        verify(traineeDAO, times(1)).updateTrainee(trainee);
+        verify(traineeRepository, times(1)).save(trainee);
         assertEquals(credentialsUpdateDTO.getNewPassword(), result.getPassword());
     }
 
     @Test
     void updateTrainee() {
         // Arrange
-        when(traineeDAO.findTraineeByUsername(anyString())).thenReturn(trainee);
-        when(traineeDAO.updateTrainee(trainee)).thenReturn(trainee);
+        when(traineeRepository.findTraineeByUsername(anyString())).thenReturn(trainee);
+        when(traineeRepository.save(trainee)).thenReturn(trainee);
 
         // Act
         TraineeUpdateDTO traineeUpdateDTO = TraineeUpdateDTO.builder()
@@ -132,21 +132,21 @@ class TraineeServiceTest {
         Trainee result = traineeService.updateTrainee(traineeUpdateDTO);
 
         // Assert
-        verify(traineeDAO, times(1)).updateTrainee(trainee);
+        verify(traineeRepository, times(1)).save(trainee);
         assertEquals(trainee, result);
     }
 
     @Test
     void toggleTraineeActivationTest() {
         // Arrange
-        when(traineeDAO.findTraineeByUsername(anyString())).thenReturn(trainee);
-        when(traineeDAO.updateTrainee(trainee)).thenReturn(trainee);
+        when(traineeRepository.findTraineeByUsername(anyString())).thenReturn(trainee);
+        when(traineeRepository.save(trainee)).thenReturn(trainee);
 
         // Act
         boolean result = traineeService.toggleTraineeActivation(trainee.getUsername(), trainee.getUser().isActive());
 
         // Assert
-        verify(traineeDAO, times(1)).updateTrainee(trainee);
+        verify(traineeRepository, times(1)).save(trainee);
         assertTrue(result);
     }
 
@@ -154,13 +154,13 @@ class TraineeServiceTest {
     void deleteTrainee() {
         // Arrange
         String username = "testUser";
-        when(traineeDAO.deleteTraineeByUsername(username)).thenReturn(true);
+        when(traineeRepository.deleteTraineeByUsername(username)).thenReturn(true);
 
         // Act
         boolean result = traineeService.deleteTrainee(username);
 
         // Assert
-        verify(traineeDAO, times(1)).deleteTraineeByUsername(username);
+        verify(traineeRepository, times(1)).deleteTraineeByUsername(username);
         assertTrue(result);
     }
 
@@ -168,13 +168,13 @@ class TraineeServiceTest {
     void getAllTrainees() {
         // Arrange
         List<Trainee> expectedTrainees = Collections.singletonList(new Trainee());
-        when(traineeDAO.getAllTrainees()).thenReturn(expectedTrainees);
+        when(traineeRepository.findAll()).thenReturn(expectedTrainees);
 
         // Act
         List<Trainee> result = traineeService.getAllTrainees();
 
         // Assert
-        verify(traineeDAO, times(1)).getAllTrainees();
+        verify(traineeRepository, times(1)).findAll();
         assertEquals(expectedTrainees, result);
     }
 }

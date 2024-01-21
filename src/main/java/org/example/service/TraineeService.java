@@ -4,7 +4,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
-import org.example.dao.TraineeDAO;
+import org.example.repository.TraineeRepository;
 import org.example.dto.credentials.CredentialsUpdateDTO;
 import org.example.dto.trainee.TraineeUpdateDTO;
 import org.example.model.Trainee;
@@ -20,13 +20,13 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class TraineeService {
 
-    private final TraineeDAO traineeDAO;
+    private final TraineeRepository traineeRepository;
 
     private final CredentialsGenerator generator;
 
     @Autowired
-    public TraineeService(TraineeDAO traineeDAO, CredentialsGenerator credentialsGenerator) {
-        this.traineeDAO = traineeDAO;
+    public TraineeService(TraineeRepository traineeRepository, CredentialsGenerator credentialsGenerator) {
+        this.traineeRepository = traineeRepository;
         this.generator = credentialsGenerator;
     }
 
@@ -38,14 +38,14 @@ public class TraineeService {
         String password = generator.generateRandomPassword();
         newTrainee.setUsername(username);
         newTrainee.setPassword(password);
-        Trainee savedTrainee = traineeDAO.saveTrainee(newTrainee);
+        Trainee savedTrainee = traineeRepository.save(newTrainee);
         log.info("Trainee successfully created");
         return savedTrainee;
     }
 
     @Transactional(readOnly = true)
     public Trainee getTraineeByUsername(String username) {
-        Trainee trainee = traineeDAO.findTraineeByUsername(username);
+        Trainee trainee = traineeRepository.findTraineeByUsername(username);
         log.info("Trainee successfully retrieved");
         return trainee;
     }
@@ -54,7 +54,7 @@ public class TraineeService {
     public Trainee changePassword(CredentialsUpdateDTO credentialsUpdateDTO) {
         Trainee trainee = getTraineeByUsername(credentialsUpdateDTO.getUsername());
         trainee.setPassword(credentialsUpdateDTO.getNewPassword());
-        Trainee updatedTrainee = traineeDAO.updateTrainee(trainee);
+        Trainee updatedTrainee = traineeRepository.save(trainee);
         log.info("Password successfully changed");
         return updatedTrainee;
     }
@@ -67,23 +67,23 @@ public class TraineeService {
         trainee.setDateOfBirth(traineeUpdateDTO.getDateOfBirth());
         trainee.setAddress(traineeUpdateDTO.getAddress());
         trainee.getUser().setActive(traineeUpdateDTO.isActive());
-        Trainee updatedTrainee = traineeDAO.updateTrainee(trainee);
+        Trainee updatedTrainee = traineeRepository.save(trainee);
         log.info("Trainee successfully updated");
         return updatedTrainee;
     }
 
     @Transactional
     public boolean toggleTraineeActivation(String username, boolean isActive) {
-        Trainee trainee = traineeDAO.findTraineeByUsername(username);
+        Trainee trainee = traineeRepository.findTraineeByUsername(username);
         trainee.getUser().setActive(isActive);
-        Trainee updatedTrainee = traineeDAO.updateTrainee(trainee);
+        Trainee updatedTrainee = traineeRepository.save(trainee);
         log.info("Activation status successfully updated");
         return Optional.ofNullable(updatedTrainee).isPresent();
     }
 
     @Transactional
     public boolean deleteTrainee(String username) {
-        boolean deletionResult = traineeDAO.deleteTraineeByUsername(username);
+        boolean deletionResult = traineeRepository.deleteTraineeByUsername(username);
         if (deletionResult) {
             log.info("Trainee successfully deleted");
         } else {
@@ -94,7 +94,7 @@ public class TraineeService {
 
     @Transactional(readOnly = true)
     public List<Trainee> getAllTrainees() {
-        List<Trainee> trainees = traineeDAO.getAllTrainees();
+        List<Trainee> trainees = traineeRepository.findAll();
         log.info("Successfully retrieved all Trainees");
         return trainees;
     }

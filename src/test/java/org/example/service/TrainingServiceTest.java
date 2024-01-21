@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -12,10 +13,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
-import org.example.dao.TraineeDAO;
-import org.example.dao.TrainerDAO;
-import org.example.dao.TrainingDAO;
 import org.example.dto.training.TrainingCreateDTO;
 import org.example.enums.TrainingTypeName;
 import org.example.model.Trainee;
@@ -23,6 +22,9 @@ import org.example.model.Trainer;
 import org.example.model.Training;
 import org.example.model.TrainingType;
 import org.example.model.User;
+import org.example.repository.TraineeRepository;
+import org.example.repository.TrainerRepository;
+import org.example.repository.TrainingRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,13 +39,13 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 class TrainingServiceTest {
 
     @MockBean
-    private TrainingDAO trainingDAO;
+    private TrainingRepository trainingRepository;
 
     @MockBean
-    private TraineeDAO traineeDAO;
+    private TraineeRepository traineeRepository;
 
     @MockBean
-    private TrainerDAO trainerDAO;
+    private TrainerRepository trainerRepository;
 
     @Autowired
     private TrainingService trainingService;
@@ -109,17 +111,17 @@ class TrainingServiceTest {
                 .trainingDuration(training.getTrainingDuration())
                 .build();
 
-        when(traineeDAO.findTraineeByUsername(anyString())).thenReturn(trainee);
-        when(trainerDAO.findTrainerByUsername(anyString())).thenReturn(trainer);
-        when(trainingDAO.findTrainingTypeByName(any())).thenReturn(training.getTrainingType());
-        when(trainingDAO.saveTraining(any())).thenReturn(training);
+        when(traineeRepository.findTraineeByUsername(anyString())).thenReturn(trainee);
+        when(trainerRepository.findTrainerByUsername(anyString())).thenReturn(trainer);
+        when(trainingRepository.findTrainingTypeByName(any())).thenReturn(training.getTrainingType());
+        when(trainingRepository.save(any())).thenReturn(training);
 
         // Act
         boolean result = trainingService.createTraining(trainingCreateDTO);
 
         // Assert
         ArgumentCaptor<Training> trainingCaptor = ArgumentCaptor.forClass(Training.class);
-        verify(trainingDAO, times(1)).saveTraining(trainingCaptor.capture());
+        verify(trainingRepository, times(1)).save(trainingCaptor.capture());
         assertTrue(result);
         assertEquals(training.getTrainingDuration(), trainingCaptor.getValue().getTrainingDuration());
     }
@@ -127,39 +129,39 @@ class TrainingServiceTest {
     @Test
     void getTrainingById() {
         // Arrange
-        when(trainingDAO.findById(1L)).thenReturn(training);
+        when(trainingRepository.findById(1L)).thenReturn(Optional.of(training));
 
         // Act
         Training result = trainingService.getTrainingById(1L);
 
         // Assert
-        verify(trainingDAO, times(1)).findById(1L);
+        verify(trainingRepository, times(1)).findById(1L);
         assertEquals(training, result);
     }
 
     @Test
     void updateTraining() {
         // Arrange
-        when(trainingDAO.updateTraining(training)).thenReturn(training);
+        when(trainingRepository.save(training)).thenReturn(training);
 
         // Act
         Training result = trainingService.updateTraining(training);
 
         // Assert
-        verify(trainingDAO, times(1)).updateTraining(training);
+        verify(trainingRepository, times(1)).save(training);
         assertEquals(training, result);
     }
 
     @Test
     void deleteTraining() {
         // Arrange
-        when(trainingDAO.deleteTraining(training)).thenReturn(true);
+        doNothing().when(trainingRepository).delete(training);
 
         // Act
         boolean result = trainingService.deleteTraining(training);
 
         // Assert
-        verify(trainingDAO, times(1)).deleteTraining(training);
+        verify(trainingRepository, times(1)).delete(training);
         assertTrue(result);
     }
 
@@ -168,7 +170,7 @@ class TrainingServiceTest {
         // Arrange
         int trainingDuration = 10;
         List<Training> expectedTrainingList = Collections.singletonList(training);
-        when(trainingDAO.getTraineeTrainingList(anyString(), any(), any(), anyString(), anyString())).thenReturn(expectedTrainingList);
+        when(trainingRepository.getTraineeTrainingList(anyString(), any(), any(), anyString(), anyString())).thenReturn(expectedTrainingList);
 
         // Act
         List<Training> result = trainingService.getTraineeTrainingList(
@@ -180,7 +182,7 @@ class TrainingServiceTest {
         );
 
         // Assert
-        verify(trainingDAO, times(1)).getTraineeTrainingList(anyString(), any(), any(), anyString(), anyString());
+        verify(trainingRepository, times(1)).getTraineeTrainingList(anyString(), any(), any(), anyString(), anyString());
         assertEquals(expectedTrainingList, result);
     }
 
@@ -189,7 +191,7 @@ class TrainingServiceTest {
         // Arrange
         int trainingDuration = 10;
         List<Training> expectedTrainingList = Collections.singletonList(training);
-        when(trainingDAO.getTrainerTrainingList(anyString(), any(), any(), anyString())).thenReturn(expectedTrainingList);
+        when(trainingRepository.getTrainerTrainingList(anyString(), any(), any(), anyString())).thenReturn(expectedTrainingList);
 
         // Act
         List<Training> result = trainingService.getTrainerTrainingList(
@@ -200,7 +202,7 @@ class TrainingServiceTest {
         );
 
         // Assert
-        verify(trainingDAO, times(1)).getTrainerTrainingList(anyString(), any(), any(), anyString());
+        verify(trainingRepository, times(1)).getTrainerTrainingList(anyString(), any(), any(), anyString());
         assertEquals(expectedTrainingList, result);
     }
 
@@ -208,13 +210,13 @@ class TrainingServiceTest {
     void getAllTrainings() {
         // Arrange
         List<Training> expectedTrainingList = Collections.singletonList(training);
-        when(trainingDAO.findAllTrainings()).thenReturn(expectedTrainingList);
+        when(trainingRepository.findAll()).thenReturn(expectedTrainingList);
 
         // Act
         List<Training> result = trainingService.getAllTrainings();
 
         // Assert
-        verify(trainingDAO, times(1)).findAllTrainings();
+        verify(trainingRepository, times(1)).findAll();
         assertEquals(expectedTrainingList, result);
     }
 
