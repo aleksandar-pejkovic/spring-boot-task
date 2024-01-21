@@ -1,4 +1,4 @@
-package org.example.utils;
+package org.example.utils.converter;
 
 import java.util.List;
 

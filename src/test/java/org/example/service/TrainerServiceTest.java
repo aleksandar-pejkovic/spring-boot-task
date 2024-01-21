@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import org.example.dto.credentials.CredentialsUpdateDTO;
 import org.example.dto.trainer.TrainerUpdateDTO;
@@ -20,7 +21,8 @@ import org.example.model.User;
 import org.example.repository.TraineeRepository;
 import org.example.repository.TrainerRepository;
 import org.example.repository.TrainingRepository;
-import org.example.utils.CredentialsGenerator;
+import org.example.repository.TrainingTypeRepository;
+import org.example.utils.credentials.CredentialsGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,6 +43,9 @@ class TrainerServiceTest {
 
     @MockBean
     private TrainingRepository trainingRepository;
+
+    @MockBean
+    private TrainingTypeRepository trainingTypeRepository;
 
     @MockBean
     private CredentialsGenerator credentialsGenerator;
@@ -77,7 +82,7 @@ class TrainerServiceTest {
                 .trainingTypeName(TrainingTypeName.AEROBIC)
                 .build();
 
-        when(trainingRepository.findTrainingTypeByName(any())).thenReturn(trainingType);
+        when(trainingTypeRepository.findByTrainingTypeName(any())).thenReturn(Optional.of(trainingType));
         when(credentialsGenerator.generateUsername(any())).thenReturn("Valentino.Rossi");
         when(credentialsGenerator.generateRandomPassword()).thenReturn("9876543210");
         when(trainerRepository.save(any())).thenReturn(trainer);
@@ -95,13 +100,13 @@ class TrainerServiceTest {
         // Arrange
         String username = "testUser";
         Trainer expectedTrainer = new Trainer();
-        when(trainerRepository.findTrainerByUsername(username)).thenReturn(expectedTrainer);
+        when(trainerRepository.findByUserUsername(username)).thenReturn(Optional.of(expectedTrainer));
 
         // Act
         Trainer result = trainerService.getTrainerByUsername(username);
 
         // Assert
-        verify(trainerRepository, times(1)).findTrainerByUsername(username);
+        verify(trainerRepository, times(1)).findByUserUsername(username);
         assertEquals(expectedTrainer, result);
     }
 
@@ -114,7 +119,7 @@ class TrainerServiceTest {
                 .newPassword("newPassword")
                 .build();
 
-        when(trainerService.getTrainerByUsername(credentialsUpdateDTO.getUsername())).thenReturn(trainer);
+        when(trainerRepository.findByUserUsername(any())).thenReturn(Optional.ofNullable(trainer));
         when(trainerRepository.save(trainer)).thenReturn(trainer);
 
         // Act
@@ -133,8 +138,8 @@ class TrainerServiceTest {
                 .trainingTypeName(TrainingTypeName.AEROBIC)
                 .build();
 
-        when(trainerRepository.findTrainerByUsername(any())).thenReturn(trainer);
-        when(trainingRepository.findTrainingTypeByName(any())).thenReturn(trainingType);
+        when(trainerRepository.findByUserUsername(any())).thenReturn(Optional.of(trainer));
+        when(trainingTypeRepository.findByTrainingTypeName(any())).thenReturn(Optional.of(trainingType));
         when(trainerRepository.save(trainer)).thenReturn(trainer);
         TrainerUpdateDTO trainerUpdateDTO = TrainerUpdateDTO.builder()
                 .username(trainer.getUsername())
@@ -154,7 +159,7 @@ class TrainerServiceTest {
     @Test
     void toggleTrainerActivationTest() {
         // Arrange
-        when(trainerRepository.findTrainerByUsername(anyString())).thenReturn(trainer);
+        when(trainerRepository.findByUserUsername(anyString())).thenReturn(Optional.of(trainer));
         when(trainerRepository.save(trainer)).thenReturn(trainer);
 
         // Act
@@ -170,13 +175,13 @@ class TrainerServiceTest {
         // Arrange
         String username = "testUser";
         String password = "testPassword";
-        when(trainerRepository.deleteTrainerByUsername(username)).thenReturn(true);
+        when(trainerRepository.deleteByUserUsername(username)).thenReturn(true);
 
         // Act
         boolean result = trainerService.deleteTrainer(username, password);
 
         // Assert
-        verify(trainerRepository, times(1)).deleteTrainerByUsername(username);
+        verify(trainerRepository, times(1)).deleteByUserUsername(username);
         assertTrue(result);
     }
 
@@ -186,13 +191,13 @@ class TrainerServiceTest {
         String traineeUsername = "traineeUser";
         String password = "testPassword";
         List<Trainer> expectedTrainers = Collections.singletonList(new Trainer());
-        when(trainerRepository.getNotAssignedTrainers(traineeUsername)).thenReturn(expectedTrainers);
+        when(trainerRepository.findByTraineeListUserUsernameAndUserIsActiveIsTrueOrTraineeListIsNull(traineeUsername)).thenReturn(expectedTrainers);
 
         // Act
         List<Trainer> result = trainerService.getNotAssignedTrainerList(traineeUsername);
 
         // Assert
-        verify(trainerRepository, times(1)).getNotAssignedTrainers(traineeUsername);
+        verify(trainerRepository, times(1)).findByTraineeListUserUsernameAndUserIsActiveIsTrueOrTraineeListIsNull(traineeUsername);
         assertEquals(expectedTrainers, result);
     }
 

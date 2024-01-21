@@ -11,13 +11,14 @@ import static org.mockito.Mockito.when;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 import org.example.dto.credentials.CredentialsUpdateDTO;
 import org.example.dto.trainee.TraineeUpdateDTO;
 import org.example.model.Trainee;
 import org.example.model.User;
 import org.example.repository.TraineeRepository;
-import org.example.utils.CredentialsGenerator;
+import org.example.utils.credentials.CredentialsGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -84,13 +85,13 @@ class TraineeServiceTest {
         // Arrange
         String username = "testUser";
         Trainee expectedTrainee = new Trainee();
-        when(traineeRepository.findTraineeByUsername(username)).thenReturn(expectedTrainee);
+        when(traineeRepository.findByUserUsername(username)).thenReturn(Optional.of(expectedTrainee));
 
         // Act
         Trainee result = traineeService.getTraineeByUsername(username);
 
         // Assert
-        verify(traineeRepository, times(1)).findTraineeByUsername(username);
+        verify(traineeRepository, times(1)).findByUserUsername(username);
         assertEquals(expectedTrainee, result);
     }
 
@@ -99,12 +100,12 @@ class TraineeServiceTest {
         // Arrange
         CredentialsUpdateDTO credentialsUpdateDTO = CredentialsUpdateDTO.builder()
                 .username("testUser")
-                .oldPassword("oldPassword")
+                .oldPassword("0123456789")
                 .newPassword("newPassword")
                 .build();
 
-        when(traineeService.getTraineeByUsername(credentialsUpdateDTO.getUsername())).thenReturn(trainee);
-        when(traineeRepository.save(trainee)).thenReturn(trainee);
+        when(traineeRepository.findByUserUsername(any())).thenReturn(Optional.ofNullable(trainee));
+        when(traineeRepository.save(any())).thenReturn(trainee);
 
         // Act
         Trainee result = traineeService.changePassword(credentialsUpdateDTO);
@@ -117,7 +118,7 @@ class TraineeServiceTest {
     @Test
     void updateTrainee() {
         // Arrange
-        when(traineeRepository.findTraineeByUsername(anyString())).thenReturn(trainee);
+        when(traineeRepository.findByUserUsername(anyString())).thenReturn(Optional.of(trainee));
         when(traineeRepository.save(trainee)).thenReturn(trainee);
 
         // Act
@@ -139,7 +140,7 @@ class TraineeServiceTest {
     @Test
     void toggleTraineeActivationTest() {
         // Arrange
-        when(traineeRepository.findTraineeByUsername(anyString())).thenReturn(trainee);
+        when(traineeRepository.findByUserUsername(anyString())).thenReturn(Optional.of(trainee));
         when(traineeRepository.save(trainee)).thenReturn(trainee);
 
         // Act
@@ -154,13 +155,13 @@ class TraineeServiceTest {
     void deleteTrainee() {
         // Arrange
         String username = "testUser";
-        when(traineeRepository.deleteTraineeByUsername(username)).thenReturn(true);
+        when(traineeRepository.deleteByUserUsername(username)).thenReturn(true);
 
         // Act
         boolean result = traineeService.deleteTrainee(username);
 
         // Assert
-        verify(traineeRepository, times(1)).deleteTraineeByUsername(username);
+        verify(traineeRepository, times(1)).deleteByUserUsername(username);
         assertTrue(result);
     }
 

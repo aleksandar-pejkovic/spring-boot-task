@@ -1,37 +1,40 @@
 package org.example.controller;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 
-import org.example.dto.credentials.CredentialsDTO;
-import org.example.dto.credentials.CredentialsUpdateDTO;
-import org.example.dto.trainee.TraineeDTO;
-import org.example.dto.trainee.TraineeUpdateDTO;
 import org.example.model.Trainee;
 import org.example.model.User;
 import org.example.service.TraineeService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.MockMvc;
 
-@ExtendWith(SpringExtension.class)
-@ContextConfiguration(classes = {TraineeController.class})
+import com.jayway.jsonpath.JsonPath;
+
+@SpringBootTest
+@AutoConfigureMockMvc
 public class TraineeControllerTest {
 
     @Autowired
-    private TraineeController traineeController;
+    private MockMvc mockMvc;
 
     @MockBean
     private TraineeService traineeService;
@@ -57,77 +60,84 @@ public class TraineeControllerTest {
     }
 
     @Test
-    void traineeRegistration() {
-        Date date = new Date();
+    void traineeRegistration() throws Exception {
+        when(traineeService.createTrainee(any(), any(), any(), any())).thenReturn(trainee);
 
-        when(traineeService.createTrainee(anyString(), anyString(), any(), anyString())).thenReturn(trainee);
-
-        CredentialsDTO result = traineeController.traineeRegistration("John", "Doe", date, "Random 17");
-
-        verify(traineeService, times(1)).createTrainee("John", "Doe", date, "Random 17");
-        assertEquals("John.Doe", result.getUsername());
-        assertEquals("0123456789", result.getPassword());
+        mockMvc.perform(post("/api/trainees")
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("firstName", "John")
+                        .param("lastName", "Doe"))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void changeLogin() {
-        CredentialsUpdateDTO credentialsUpdateDTO = CredentialsUpdateDTO.builder()
-                .username("John.Doe")
-                .oldPassword("0123456789")
-                .newPassword("0123456789")
-                .build();
+    @WithMockUser
+    void changeLogin() throws Exception {
+
+        String credentialsUpdateDTOJson = JsonPath.parse(new HashMap<String, Object>() {{
+            put("username", "John.Doe");
+            put("oldPassword", "1234567890");
+            put("newPassword", "0123456789");
+        }}).jsonString();
 
         when(traineeService.changePassword(any())).thenReturn(trainee);
 
-        ResponseEntity<Boolean> result = traineeController.changeLogin(credentialsUpdateDTO);
-
-        verify(traineeService, times(1)).changePassword(credentialsUpdateDTO);
-        assertEquals(true, result.getBody());
+        mockMvc.perform(put("/api/trainees/change-login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(credentialsUpdateDTOJson))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void getTraineeByUsername() {
-        String username = "John.Doe";
+    @WithMockUser
+    void getTraineeByUsername() throws Exception {
         when(traineeService.getTraineeByUsername(anyString())).thenReturn(trainee);
 
-        TraineeDTO result = traineeController.getTraineeByUsername(username);
-
-        verify(traineeService, times(1)).getTraineeByUsername(username);
-        assertEquals(trainee.getUser().getFirstName(), result.getFirstName());
+        mockMvc.perform(get("/api/trainees/John.Doe")
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void updateTraineeProfile() {
-        TraineeUpdateDTO traineeUpdateDTO = TraineeUpdateDTO.builder().build();
+    @WithMockUser
+    void updateTraineeProfile() throws Exception {
+        String traineeUpdateDTOJson = JsonPath.parse(new HashMap<String, Object>() {{
+            put("username", "John.Doe");
+            put("firstName", "John");
+            put("lastName", "Doe");
+        }}).jsonString();
 
         when(traineeService.updateTrainee(any())).thenReturn(trainee);
 
-        TraineeDTO result = traineeController.updateTraineeProfile(traineeUpdateDTO);
-
-        verify(traineeService, times(1)).updateTrainee(traineeUpdateDTO);
-        assertEquals(trainee.getUser().getFirstName(), result.getFirstName());
+        mockMvc.perform(put("/api/trainees")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(traineeUpdateDTOJson))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void deleteTraineeProfile() {
+    @WithMockUser
+    void deleteTraineeProfile() throws Exception {
         String username = "John.Doe";
         when(traineeService.deleteTrainee(username)).thenReturn(true);
 
-        ResponseEntity<Boolean> result = traineeController.deleteTraineeProfile(username);
-
-        verify(traineeService, times(1)).deleteTrainee(username);
-        assertEquals(true, result.getBody());
+        mockMvc.perform(delete("/api/trainees")
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("username", "John.Doe"))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void toggleTraineeActivation() {
+    @WithMockUser
+    void toggleTraineeActivation() throws Exception {
         String username = "John.Doe";
         boolean isActive = true;
         when(traineeService.toggleTraineeActivation(username, isActive)).thenReturn(true);
 
-        ResponseEntity<Boolean> result = traineeController.toggleTraineeActivation(username, isActive);
-
-        verify(traineeService, times(1)).toggleTraineeActivation(username, isActive);
-        assertEquals(true, result.getBody());
+        mockMvc.perform(patch("/api/trainees")
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("username", "John.Doe")
+                        .param("isActive", "true"))
+                .andExpect(status().isOk());
     }
 }

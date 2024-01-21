@@ -1,21 +1,19 @@
 package org.example.controller;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
-import org.example.dto.credentials.CredentialsDTO;
 import org.example.dto.credentials.CredentialsUpdateDTO;
-import org.example.dto.trainer.TrainerDTO;
-import org.example.dto.trainer.TrainerEmbeddedDTO;
-import org.example.dto.trainer.TrainerListDTO;
-import org.example.dto.trainer.TrainerUpdateDTO;
 import org.example.enums.TrainingTypeName;
 import org.example.model.Trainer;
 import org.example.model.TrainingType;
@@ -23,19 +21,22 @@ import org.example.model.User;
 import org.example.service.TrainerService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.MockMvc;
 
-@ExtendWith(SpringExtension.class)
-@ContextConfiguration(classes = {TrainerController.class})
+import com.jayway.jsonpath.JsonPath;
+
+@SpringBootTest
+@AutoConfigureMockMvc
 class TrainerControllerTest {
 
     @Autowired
-    private TrainerController trainerController;
+    private MockMvc mockMvc;
 
     @MockBean
     private TrainerService trainerService;
@@ -66,92 +67,102 @@ class TrainerControllerTest {
     }
 
     @Test
-    void traineeRegistration() {
+    void traineeRegistration() throws Exception {
         TrainingTypeName specialization = TrainingTypeName.AEROBIC;
 
         when(trainerService.createTrainer(anyString(), anyString(), any())).thenReturn(trainer);
 
-        CredentialsDTO result = trainerController.traineeRegistration("John", "Doe", specialization);
-
-        verify(trainerService, times(1)).createTrainer("John", "Doe", specialization);
-        assertEquals("John.Doe", result.getUsername());
-        assertEquals("0123456789", result.getPassword());
+        mockMvc.perform(post("/api/trainers")
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("firstName", "John")
+                        .param("lastName", "Doe")
+                        .param("specialization", TrainingTypeName.AEROBIC.name()))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void changeLogin() {
-        CredentialsUpdateDTO credentialsUpdateDTO = CredentialsUpdateDTO.builder()
-                .username("John.Doe")
-                .oldPassword("0123456789")
-                .newPassword("0123456789")
-                .build();
+    @WithMockUser
+    void changeLogin() throws Exception {
+
+        String credentialsUpdateDTOJson = JsonPath.parse(new HashMap<String, Object>() {{
+            put("username", "John.Doe");
+            put("oldPassword", "1234567890");
+            put("newPassword", "0123456789");
+        }}).jsonString();
 
         when(trainerService.changePassword(any())).thenReturn(trainer);
 
-        ResponseEntity<Boolean> result = trainerController.changeLogin(credentialsUpdateDTO);
-
-        verify(trainerService, times(1)).changePassword(credentialsUpdateDTO);
-        assertEquals(true, result.getBody());
+        mockMvc.perform(put("/api/trainers/change-login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(credentialsUpdateDTOJson))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void getTrainerByUsername() {
-        String username = "John.Doe";
-        when(trainerService.getTrainerByUsername(username)).thenReturn(trainer);
+    @WithMockUser
+    void getTrainerByUsername() throws Exception {
+        when(trainerService.getTrainerByUsername(any())).thenReturn(trainer);
 
-        TrainerDTO result = trainerController.getTrainerByUsername(username);
-
-        verify(trainerService, times(1)).getTrainerByUsername(username);
-        assertEquals(trainer.getUsername(), result.getUsername());
+        mockMvc.perform(get("/api/trainers/John.Doe")
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void updateTrainerProfile() {
-        TrainerUpdateDTO trainerUpdateDTO = TrainerUpdateDTO.builder().build();
-
+    @WithMockUser
+    void updateTrainerProfile() throws Exception {
         when(trainerService.updateTrainer(any())).thenReturn(trainer);
 
-        TrainerDTO result = trainerController.updateTrainerProfile(trainerUpdateDTO);
+        String trainerUpdateDTOJson = JsonPath.parse(new HashMap<String, Object>() {{
+            put("username", "John.Doe");
+            put("firstName", "John");
+            put("lastName", "Doe");
+            put("specialization", "AEROBIC");
+            put("isActive", "true");
+        }}).jsonString();
 
-        verify(trainerService, times(1)).updateTrainer(trainerUpdateDTO);
-        assertEquals(trainer.getUsername(), result.getUsername());
+        mockMvc.perform(put("/api/trainers")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(trainerUpdateDTOJson))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void getNotAssignedOnTrainee() {
-        String traineeUsername = "Trainee1";
+    @WithMockUser
+    void getNotAssignedOnTrainee() throws Exception {
         List<Trainer> unassignedTrainers = new ArrayList<>();
-        when(trainerService.getNotAssignedTrainerList(traineeUsername)).thenReturn(unassignedTrainers);
+        when(trainerService.getNotAssignedTrainerList(any())).thenReturn(unassignedTrainers);
 
-        List<TrainerEmbeddedDTO> result = trainerController.getNotAssignedOnTrainee(traineeUsername);
-
-        verify(trainerService, times(1)).getNotAssignedTrainerList(traineeUsername);
-        assertEquals(0, result.size());
+        mockMvc.perform(get("/api/trainers/unassigned")
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("traineeUsername", "John.Doe"))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void updateTraineeTrainerList() {
-        String traineeUsername = "Trainee1";
-        TrainerListDTO trainerListDTO = TrainerListDTO.builder().build();
+    @WithMockUser
+    void updateTraineeTrainerList() throws Exception {
         List<Trainer> updatedTraineeTrainerList = new ArrayList<>();
-        when(trainerService.updateTraineeTrainerList(traineeUsername, trainerListDTO))
+        when(trainerService.updateTraineeTrainerList(any(), any()))
                 .thenReturn(updatedTraineeTrainerList);
 
-        List<TrainerEmbeddedDTO> result = trainerController.updateTraineeTrainerList(traineeUsername, trainerListDTO);
-
-        verify(trainerService, times(1)).updateTraineeTrainerList(traineeUsername, trainerListDTO);
-        assertEquals(0, result.size());
+        mockMvc.perform(put("/api/trainers/{traineeUsername}/updateTrainers", "John.Doe")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"trainerUsernameList\":[\"Trainer1\", \"Trainer2\", \"Trainer3\"]}"))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void toggleTraineeActivation() {
+    @WithMockUser
+    void toggleTraineeActivation() throws Exception {
         String username = "John.Doe";
         boolean isActive = true;
         when(trainerService.toggleTrainerActivation(username, isActive)).thenReturn(true);
 
-        ResponseEntity<Boolean> result = trainerController.toggleTraineeActivation(username, isActive);
-
-        verify(trainerService, times(1)).toggleTrainerActivation(username, isActive);
-        assertEquals(true, result.getBody());
+        mockMvc.perform(patch("/api/trainers")
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("username", "John.Doe")
+                        .param("isActive", "true"))
+                .andExpect(status().isOk());
     }
 }

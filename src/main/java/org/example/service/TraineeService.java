@@ -4,12 +4,15 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
-import org.example.repository.TraineeRepository;
 import org.example.dto.credentials.CredentialsUpdateDTO;
 import org.example.dto.trainee.TraineeUpdateDTO;
+import org.example.exception.credentials.IdenticalPasswordException;
+import org.example.exception.credentials.IncorrectPasswordException;
+import org.example.exception.notfound.TraineeNotFoundException;
 import org.example.model.Trainee;
 import org.example.model.User;
-import org.example.utils.CredentialsGenerator;
+import org.example.repository.TraineeRepository;
+import org.example.utils.credentials.CredentialsGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,7 +48,8 @@ public class TraineeService {
 
     @Transactional(readOnly = true)
     public Trainee getTraineeByUsername(String username) {
-        Trainee trainee = traineeRepository.findTraineeByUsername(username);
+        Trainee trainee = traineeRepository.findByUserUsername(username)
+                .orElseThrow(() -> new TraineeNotFoundException("Trainee not found"));
         log.info("Trainee successfully retrieved");
         return trainee;
     }
@@ -53,6 +57,11 @@ public class TraineeService {
     @Transactional
     public Trainee changePassword(CredentialsUpdateDTO credentialsUpdateDTO) {
         Trainee trainee = getTraineeByUsername(credentialsUpdateDTO.getUsername());
+        if (!credentialsUpdateDTO.getOldPassword().equals(trainee.getPassword())) {
+            throw new IncorrectPasswordException("Wrong password!");
+        } else if (credentialsUpdateDTO.getOldPassword().equals(credentialsUpdateDTO.getNewPassword())) {
+            throw new IdenticalPasswordException("New password must be different than old password");
+        }
         trainee.setPassword(credentialsUpdateDTO.getNewPassword());
         Trainee updatedTrainee = traineeRepository.save(trainee);
         log.info("Password successfully changed");
@@ -74,7 +83,8 @@ public class TraineeService {
 
     @Transactional
     public boolean toggleTraineeActivation(String username, boolean isActive) {
-        Trainee trainee = traineeRepository.findTraineeByUsername(username);
+        Trainee trainee = traineeRepository.findByUserUsername(username)
+                .orElseThrow(() -> new TraineeNotFoundException("Trainee not found"));
         trainee.getUser().setActive(isActive);
         Trainee updatedTrainee = traineeRepository.save(trainee);
         log.info("Activation status successfully updated");
@@ -83,13 +93,14 @@ public class TraineeService {
 
     @Transactional
     public boolean deleteTrainee(String username) {
-        boolean deletionResult = traineeRepository.deleteTraineeByUsername(username);
+        boolean deletionResult = traineeRepository.deleteByUserUsername(username);
         if (deletionResult) {
             log.info("Trainee successfully deleted");
+            return true;
         } else {
             log.warn("Trainee deletion failed. No such Trainee found.");
+            throw new TraineeNotFoundException("Trainee not found");
         }
-        return deletionResult;
     }
 
     @Transactional(readOnly = true)
@@ -103,6 +114,7 @@ public class TraineeService {
         return User.builder()
                 .firstName(firstName)
                 .lastName(lastName)
+                .isActive(true)
                 .build();
     }
 

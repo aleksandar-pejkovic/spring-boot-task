@@ -8,7 +8,7 @@ import org.example.dto.trainee.TraineeDTO;
 import org.example.dto.trainee.TraineeUpdateDTO;
 import org.example.model.Trainee;
 import org.example.service.TraineeService;
-import org.example.utils.TraineeConverter;
+import org.example.utils.converter.TraineeConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -53,7 +54,7 @@ public class TraineeController {
     }
 
     @PutMapping("/change-login")
-    public ResponseEntity<Boolean> changeLogin(@RequestBody CredentialsUpdateDTO credentialsUpdateDTO) {
+    public ResponseEntity<Boolean> changeLogin(@Valid @RequestBody CredentialsUpdateDTO credentialsUpdateDTO) {
         log.info("Endpoint '/api/trainees/change-login' was called to update trainee's credentials");
         Trainee traineeAfterUpdate = traineeService.changePassword(credentialsUpdateDTO);
         return credentialsUpdateDTO.getNewPassword().equals(traineeAfterUpdate.getPassword())
@@ -69,7 +70,7 @@ public class TraineeController {
     }
 
     @PutMapping
-    public TraineeDTO updateTraineeProfile(@RequestBody TraineeUpdateDTO traineeUpdateDTO) {
+    public TraineeDTO updateTraineeProfile(@Valid @RequestBody TraineeUpdateDTO traineeUpdateDTO) {
         log.info("Endpoint '/api/trainees' was called to update trainee profile");
         Trainee updatedTrainee = traineeService.updateTrainee(traineeUpdateDTO);
         return TraineeConverter.convertToDto(updatedTrainee);

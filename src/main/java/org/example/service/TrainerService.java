@@ -3,18 +3,20 @@ package org.example.service;
 import java.util.List;
 import java.util.Optional;
 
-import org.example.repository.TraineeRepository;
-import org.example.repository.TrainerRepository;
-import org.example.repository.TrainingRepository;
 import org.example.dto.credentials.CredentialsUpdateDTO;
 import org.example.dto.trainer.TrainerListDTO;
 import org.example.dto.trainer.TrainerUpdateDTO;
 import org.example.enums.TrainingTypeName;
+import org.example.exception.notfound.TrainerNotFoundException;
+import org.example.exception.notfound.TrainingTypeNotFoundException;
 import org.example.model.Trainee;
 import org.example.model.Trainer;
 import org.example.model.TrainingType;
 import org.example.model.User;
-import org.example.utils.CredentialsGenerator;
+import org.example.repository.TraineeRepository;
+import org.example.repository.TrainerRepository;
+import org.example.repository.TrainingTypeRepository;
+import org.example.utils.credentials.CredentialsGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,20 +33,21 @@ public class TrainerService {
 
     private final CredentialsGenerator generator;
 
-    private final TrainingRepository trainingRepository;
+    private final TrainingTypeRepository trainingTypeRepository;
 
     @Autowired
-    public TrainerService(TrainerRepository trainerRepository, TraineeRepository traineeRepository, CredentialsGenerator credentialsGenerator,
-                          TrainingRepository trainingRepository) {
+    public TrainerService(TrainerRepository trainerRepository, TraineeRepository traineeRepository,
+                          CredentialsGenerator credentialsGenerator, TrainingTypeRepository trainingTypeRepository) {
         this.trainerRepository = trainerRepository;
         this.traineeRepository = traineeRepository;
         this.generator = credentialsGenerator;
-        this.trainingRepository = trainingRepository;
+        this.trainingTypeRepository = trainingTypeRepository;
     }
 
     @Transactional
     public Trainer createTrainer(String firstName, String lastName, TrainingTypeName specialization) {
-        TrainingType trainingType = trainingRepository.findTrainingTypeByName(specialization);
+        TrainingType trainingType = trainingTypeRepository.findByTrainingTypeName(specialization)
+                .orElseThrow(() -> new TrainingTypeNotFoundException("Training type not found"));
         User newUser = buildNewUser(firstName, lastName);
         Trainer newTrainer = buildNewTrainer(newUser, trainingType);
         String username = generator.generateUsername(newTrainer.getUser());
@@ -58,7 +61,8 @@ public class TrainerService {
 
     @Transactional(readOnly = true)
     public Trainer getTrainerByUsername(String username) {
-        Trainer trainer = trainerRepository.findTrainerByUsername(username);
+        Trainer trainer = trainerRepository.findByUserUsername(username)
+                .orElseThrow(() -> new TrainerNotFoundException("Trainer not found"));
         log.info("Successfully retrieved trainer by username");
         return trainer;
     }
@@ -75,7 +79,8 @@ public class TrainerService {
     @Transactional
     public Trainer updateTrainer(TrainerUpdateDTO trainerUpdateDTO) {
         Trainer trainer = getTrainerByUsername(trainerUpdateDTO.getUsername());
-        TrainingType trainingType = trainingRepository.findTrainingTypeByName(trainerUpdateDTO.getSpecialization());
+        TrainingType trainingType = trainingTypeRepository.findByTrainingTypeName(trainerUpdateDTO.getSpecialization())
+                .orElseThrow(() -> new TrainingTypeNotFoundException("Training type not found"));
         trainer.getUser().setFirstName(trainerUpdateDTO.getFirstName());
         trainer.getUser().setLastName(trainerUpdateDTO.getLastName());
         trainer.setSpecialization(trainingType);
@@ -86,33 +91,29 @@ public class TrainerService {
     }
 
     public boolean toggleTrainerActivation(String username, boolean isActive) {
-        Trainer trainer = trainerRepository.findTrainerByUsername(username);
+        Trainer trainer = trainerRepository.findByUserUsername(username)
+                .orElseThrow(() -> new TrainerNotFoundException("Trainer type not found"));
         trainer.getUser().setActive(isActive);
         Trainer updatedTrainer = trainerRepository.save(trainer);
-        if (Optional.ofNullable(updatedTrainer).isPresent()) {
-            log.info("Trainer's activation status successfully updated");
-            return true;
-        } else {
-            log.info("Activation status update failed. Trainer not found.");
-            return false;
-        }
+        log.info("Activation status successfully updated");
+        return Optional.ofNullable(updatedTrainer).isPresent();
     }
 
     @Transactional
     public boolean deleteTrainer(String username, String password) {
-        boolean deletionResult = trainerRepository.deleteTrainerByUsername(username);
+        boolean deletionResult = trainerRepository.deleteByUserUsername(username);
         if (deletionResult) {
             log.info("Trainer successfully deleted");
             return true;
         } else {
             log.info("Trainer deletion failed");
-            return false;
+            throw new TrainerNotFoundException("Trainer not found");
         }
     }
 
     @Transactional(readOnly = true)
     public List<Trainer> getNotAssignedTrainerList(String traineeUsername) {
-        List<Trainer> unassignedTrainers = trainerRepository.getNotAssignedTrainers(traineeUsername);
+        List<Trainer> unassignedTrainers = trainerRepository.findByTraineeListUserUsernameAndUserIsActiveIsTrueOrTraineeListIsNull(traineeUsername);
         log.info("Successfully retrieved unassigned trainers");
         return unassignedTrainers;
     }
@@ -126,7 +127,8 @@ public class TrainerService {
 
     @Transactional
     public List<Trainer> updateTraineeTrainerList(String traineeUsername, TrainerListDTO trainerListDTO) {
-        Trainee trainee = traineeRepository.findTraineeByUsername(traineeUsername);
+        Trainee trainee = traineeRepository.findByUserUsername(traineeUsername)
+                .orElseThrow(() -> new TrainerNotFoundException("Trainer not found"));
         List<Trainer> trainers = trainerRepository.findAll().stream()
                 .filter(trainer -> trainerListDTO.getTrainerUsernameList().contains(trainer.getUsername()))
                 .toList();

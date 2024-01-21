@@ -25,6 +25,7 @@ import org.example.model.User;
 import org.example.repository.TraineeRepository;
 import org.example.repository.TrainerRepository;
 import org.example.repository.TrainingRepository;
+import org.example.repository.TrainingTypeRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,6 +41,9 @@ class TrainingServiceTest {
 
     @MockBean
     private TrainingRepository trainingRepository;
+
+    @MockBean
+    private TrainingTypeRepository trainingTypeRepository;
 
     @MockBean
     private TraineeRepository traineeRepository;
@@ -111,9 +115,9 @@ class TrainingServiceTest {
                 .trainingDuration(training.getTrainingDuration())
                 .build();
 
-        when(traineeRepository.findTraineeByUsername(anyString())).thenReturn(trainee);
-        when(trainerRepository.findTrainerByUsername(anyString())).thenReturn(trainer);
-        when(trainingRepository.findTrainingTypeByName(any())).thenReturn(training.getTrainingType());
+        when(traineeRepository.findByUserUsername(anyString())).thenReturn(Optional.of(trainee));
+        when(trainerRepository.findByUserUsername(anyString())).thenReturn(Optional.of(trainer));
+        when(trainingTypeRepository.findByTrainingTypeName(any())).thenReturn(Optional.of(training.getTrainingType()));
         when(trainingRepository.save(any())).thenReturn(training);
 
         // Act
@@ -170,7 +174,7 @@ class TrainingServiceTest {
         // Arrange
         int trainingDuration = 10;
         List<Training> expectedTrainingList = Collections.singletonList(training);
-        when(trainingRepository.getTraineeTrainingList(anyString(), any(), any(), anyString(), anyString())).thenReturn(expectedTrainingList);
+        when(trainingRepository.findByTraineeUserUsernameAndTrainingDateBetweenAndTrainerUserUsernameAndTrainingTypeTrainingTypeName(anyString(), any(), any(), anyString(), anyString())).thenReturn(expectedTrainingList);
 
         // Act
         List<Training> result = trainingService.getTraineeTrainingList(
@@ -182,7 +186,7 @@ class TrainingServiceTest {
         );
 
         // Assert
-        verify(trainingRepository, times(1)).getTraineeTrainingList(anyString(), any(), any(), anyString(), anyString());
+        verify(trainingRepository, times(1)).findByTraineeUserUsernameAndTrainingDateBetweenAndTrainerUserUsernameAndTrainingTypeTrainingTypeName(anyString(), any(), any(), anyString(), anyString());
         assertEquals(expectedTrainingList, result);
     }
 
@@ -191,7 +195,7 @@ class TrainingServiceTest {
         // Arrange
         int trainingDuration = 10;
         List<Training> expectedTrainingList = Collections.singletonList(training);
-        when(trainingRepository.getTrainerTrainingList(anyString(), any(), any(), anyString())).thenReturn(expectedTrainingList);
+        when(trainingRepository.findByTrainerUserUsernameAndTrainingDateBetweenAndTraineeUserUsername(anyString(), any(), any(), anyString())).thenReturn(expectedTrainingList);
 
         // Act
         List<Training> result = trainingService.getTrainerTrainingList(
@@ -202,7 +206,7 @@ class TrainingServiceTest {
         );
 
         // Assert
-        verify(trainingRepository, times(1)).getTrainerTrainingList(anyString(), any(), any(), anyString());
+        verify(trainingRepository, times(1)).findByTrainerUserUsernameAndTrainingDateBetweenAndTraineeUserUsername(anyString(), any(), any(), anyString());
         assertEquals(expectedTrainingList, result);
     }
 

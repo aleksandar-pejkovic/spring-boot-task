@@ -1,13 +1,11 @@
-package org.example.utils;
+package org.example.utils.credentials;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.example.model.User;
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
-import org.hibernate.query.Query;
+import org.example.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,11 +20,11 @@ public class CredentialsGenerator {
 
     private static final int LENGTH = 10;
 
-    private final SessionFactory sessionFactory;
+    private final UserRepository userRepository;
 
     @Autowired
-    public CredentialsGenerator(SessionFactory sessionFactory) {
-        this.sessionFactory = sessionFactory;
+    public CredentialsGenerator(UserRepository userRepository) {
+        this.userRepository = userRepository;
     }
 
     public String generateRandomPassword() {
@@ -38,9 +36,7 @@ public class CredentialsGenerator {
         Matcher matcher = pattern.matcher(password);
 
         if (matcher.matches()) {
-            // for testing with h2 in-memory db
-            return "1234567890";
-//            return password;
+            return password;
         } else {
             return generateRandomPassword();
         }
@@ -50,20 +46,11 @@ public class CredentialsGenerator {
     public String generateUsername(User user) {
         log.info("Generating username...");
         String baseUsername = user.getFirstName() + "." + user.getLastName();
-        long count = fetchCountForMatchingUsername(baseUsername);
+        long count = userRepository.countByUsernameContaining(baseUsername);
         if (count > 0) {
             long usernameSuffix = count + 1;
             return baseUsername + usernameSuffix;
         }
         return baseUsername;
-    }
-
-    private long fetchCountForMatchingUsername(String baseUsername) {
-        try (Session session = sessionFactory.openSession()) {
-            Query<Long> query = session.createQuery("SELECT COUNT(*) FROM User WHERE username LIKE :baseUsername",
-                    Long.class);
-            query.setParameter("baseUsername", baseUsername + "%");
-            return query.uniqueResult();
-        }
     }
 }

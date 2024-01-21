@@ -11,7 +11,7 @@ import org.example.dto.trainer.TrainerUpdateDTO;
 import org.example.enums.TrainingTypeName;
 import org.example.model.Trainer;
 import org.example.service.TrainerService;
-import org.example.utils.TrainerConverter;
+import org.example.utils.converter.TrainerConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -54,7 +55,7 @@ public class TrainerController {
     }
 
     @PutMapping("/change-login")
-    public ResponseEntity<Boolean> changeLogin(@RequestBody CredentialsUpdateDTO credentialsUpdateDTO) {
+    public ResponseEntity<Boolean> changeLogin(@Valid @RequestBody CredentialsUpdateDTO credentialsUpdateDTO) {
         log.info("Endpoint '/api/trainers/change-login' was called to update trainers credentials");
         Trainer trainerAfterUpdate = trainerService.changePassword(credentialsUpdateDTO);
         return (credentialsUpdateDTO.getNewPassword().equals(trainerAfterUpdate.getPassword()))
@@ -70,7 +71,7 @@ public class TrainerController {
     }
 
     @PutMapping
-    public TrainerDTO updateTrainerProfile(@RequestBody TrainerUpdateDTO trainerUpdateDTO) {
+    public TrainerDTO updateTrainerProfile(@Valid @RequestBody TrainerUpdateDTO trainerUpdateDTO) {
         log.info("Endpoint '/api/trainers' was called to update trainer profile");
         Trainer updatedTrainer = trainerService.updateTrainer(trainerUpdateDTO);
         return TrainerConverter.convertToDto(updatedTrainer);
@@ -86,7 +87,7 @@ public class TrainerController {
     @PutMapping("/{traineeUsername}/updateTrainers")
     public List<TrainerEmbeddedDTO> updateTraineeTrainerList(
             @PathVariable String traineeUsername,
-            @RequestBody TrainerListDTO trainerListDTO
+            @Valid @RequestBody TrainerListDTO trainerListDTO
     ) {
         log.info("Endpoint '/api/trainers/{traineeUsername}/updateTrainers' was called to update trainee's trainer "
                 + "list");

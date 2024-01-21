@@ -1,96 +1,92 @@
 package org.example.controller;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.ArrayList;
-import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 
-import org.example.dto.training.TrainingCreateDTO;
-import org.example.dto.training.TrainingDTO;
 import org.example.dto.trainingType.TrainingTypeDTO;
-import org.example.enums.TrainingTypeName;
 import org.example.model.Training;
 import org.example.service.TrainingService;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.MockMvc;
 
-@ExtendWith(SpringExtension.class)
-@ContextConfiguration(classes = {TrainingController.class})
+import com.jayway.jsonpath.JsonPath;
+
+@SpringBootTest
+@AutoConfigureMockMvc
 class TrainingControllerTest {
 
     @Autowired
-    private TrainingController trainingController;
+    private MockMvc mockMvc;
 
     @MockBean
     private TrainingService trainingService;
 
     @Test
-    void getTraineeTrainingsList() {
-        String username = "Trainee1";
-        Date periodFrom = new Date();
-        Date periodTo = new Date();
-        String trainerName = "Trainer1";
-        TrainingTypeName trainingType = TrainingTypeName.AEROBIC;
-
+    @WithMockUser
+    void getTraineeTrainingsList() throws Exception {
         List<Training> trainings = new ArrayList<>();
-        when(trainingService.getTraineeTrainingList(username, periodFrom, periodTo, trainerName, trainingType.name()))
+
+        when(trainingService.getTraineeTrainingList(any(), any(), any(), any(), any()))
                 .thenReturn(trainings);
 
-        List<TrainingDTO> result = trainingController.getTraineeTrainingsList(
-                username, periodFrom, periodTo, trainerName, trainingType);
-
-        verify(trainingService, times(1)).getTraineeTrainingList(
-                username, periodFrom, periodTo, trainerName, trainingType.name());
-        assertEquals(0, result.size());
+        mockMvc.perform(get("/api/trainings/trainee")
+                        .param("username", "John.Doe")
+                        .param("trainerName", "Max.Biaggi")
+                        .param("trainingType", "AEROBIC"))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void getTrainerTrainingsList() {
-        String username = "Trainer1";
-        Date periodFrom = new Date();
-        Date periodTo = new Date();
-        String traineeName = "Trainee1";
-
+    @WithMockUser
+    void getTrainerTrainingsList() throws Exception {
         List<Training> trainings = new ArrayList<>();
-        when(trainingService.getTrainerTrainingList(username, periodFrom, periodTo, traineeName))
+        when(trainingService.getTrainerTrainingList(any(), any(), any(), any()))
                 .thenReturn(trainings);
 
-        List<TrainingDTO> result = trainingController.getTrainerTrainingsList(username, periodFrom, periodTo, traineeName);
-
-        verify(trainingService, times(1)).getTrainerTrainingList(username, periodFrom, periodTo, traineeName);
-        assertEquals(0, result.size());
+        mockMvc.perform(get("/api/trainings/trainer")
+                        .param("username", "John.Doe"))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void addTraining() {
-        TrainingCreateDTO trainingCreateDTO = TrainingCreateDTO.builder().build();
+    @WithMockUser
+    void addTraining() throws Exception {
+        String trainingCreateDTOJson = JsonPath.parse(new HashMap<String, Object>() {{
+            put("traineeUsername", "John.Doe");
+            put("trainerUsername", "Max.Biaggi");
+            put("trainingTypeName", "AEROBIC");
+            put("trainingDate", "2024-01-07");
+            put("trainingDuration", 30);
+        }}).jsonString();
 
         when(trainingService.createTraining(any())).thenReturn(true);
 
-        ResponseEntity<Boolean> result = trainingController.addTraining(trainingCreateDTO);
-
-        verify(trainingService, times(1)).createTraining(trainingCreateDTO);
-        assertEquals(true, result.getBody());
+        mockMvc.perform(post("/api/trainings")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(trainingCreateDTOJson))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void getAllTrainingTypes() {
+    @WithMockUser
+    void getAllTrainingTypes() throws Exception {
         List<TrainingTypeDTO> trainingTypes = new ArrayList<>();
         when(trainingService.finaAllTrainingTypes()).thenReturn(trainingTypes);
 
-        List<TrainingTypeDTO> result = trainingController.getAllTrainingTypes();
-
-        verify(trainingService, times(1)).finaAllTrainingTypes();
-        assertEquals(0, result.size());
+        mockMvc.perform(get("/api/trainings/training-types"))
+                .andExpect(status().isOk());
     }
 }

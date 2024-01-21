@@ -9,15 +9,17 @@ import org.example.dto.trainingType.TrainingTypeDTO;
 import org.example.enums.TrainingTypeName;
 import org.example.model.Training;
 import org.example.service.TrainingService;
-import org.example.utils.TrainingConverter;
+import org.example.utils.converter.TrainingConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -67,7 +69,7 @@ public class TrainingController {
     }
 
     @PostMapping
-    public ResponseEntity<Boolean> addTraining(TrainingCreateDTO trainingCreateDTO) {
+    public ResponseEntity<Boolean> addTraining(@Valid @RequestBody TrainingCreateDTO trainingCreateDTO) {
         log.info("Endpoint '/api/trainings' was called to add new training");
         boolean successfullyAddedTraining = trainingService.createTraining(trainingCreateDTO);
         return (successfullyAddedTraining)
