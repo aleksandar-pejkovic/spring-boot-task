@@ -24,6 +24,8 @@ import org.springframework.test.web.servlet.MockMvc;
 @AutoConfigureMockMvc
 class LoginControllerTest {
 
+    private static final String URL_TEMPLATE = "/api/login";
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -45,7 +47,7 @@ class LoginControllerTest {
 
         when(authenticationManager.authenticate(any())).thenReturn(authentication);
 
-        mockMvc.perform(post("/api/login")
+        mockMvc.perform(post(URL_TEMPLATE)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"username\":\"John.Doe\",\"password\":\"0123456789\"}"))
                 .andExpect(status().isOk());

@@ -28,6 +28,8 @@ import com.jayway.jsonpath.JsonPath;
 @AutoConfigureMockMvc
 class TrainingControllerTest {
 
+    private static final String URL_TEMPLATE = "/api/trainings";
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -42,7 +44,7 @@ class TrainingControllerTest {
         when(trainingService.getTraineeTrainingList(any(), any(), any(), any(), any()))
                 .thenReturn(trainings);
 
-        mockMvc.perform(get("/api/trainings/trainee")
+        mockMvc.perform(get(URL_TEMPLATE + "/trainee")
                         .param("username", "John.Doe")
                         .param("trainerName", "Max.Biaggi")
                         .param("trainingType", "AEROBIC"))
@@ -56,7 +58,7 @@ class TrainingControllerTest {
         when(trainingService.getTrainerTrainingList(any(), any(), any(), any()))
                 .thenReturn(trainings);
 
-        mockMvc.perform(get("/api/trainings/trainer")
+        mockMvc.perform(get(URL_TEMPLATE + "/trainer")
                         .param("username", "John.Doe"))
                 .andExpect(status().isOk());
     }
@@ -74,7 +76,7 @@ class TrainingControllerTest {
 
         when(trainingService.createTraining(any())).thenReturn(true);
 
-        mockMvc.perform(post("/api/trainings")
+        mockMvc.perform(post(URL_TEMPLATE)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(trainingCreateDTOJson))
                 .andExpect(status().isOk());
@@ -86,7 +88,7 @@ class TrainingControllerTest {
         List<TrainingTypeDTO> trainingTypes = new ArrayList<>();
         when(trainingService.finaAllTrainingTypes()).thenReturn(trainingTypes);
 
-        mockMvc.perform(get("/api/trainings/training-types"))
+        mockMvc.perform(get(URL_TEMPLATE + "/training-types"))
                 .andExpect(status().isOk());
     }
 }

@@ -34,10 +34,6 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .httpBasic(Customizer.withDefaults())
-                .formLogin(Customizer.withDefaults())
-//                .failureHandler(authenticationFailureHandler())
-//                .accessDeniedHandler(accessDeniedHandler())
-                .logout(Customizer.withDefaults())
                 .build();
     }
 

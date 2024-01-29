@@ -33,6 +33,8 @@ import com.jayway.jsonpath.JsonPath;
 @AutoConfigureMockMvc
 public class TraineeControllerTest {
 
+    private static final String URL_TEMPLATE = "/api/trainees";
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -63,7 +65,7 @@ public class TraineeControllerTest {
     void traineeRegistration() throws Exception {
         when(traineeService.createTrainee(any(), any(), any(), any())).thenReturn(trainee);
 
-        mockMvc.perform(post("/api/trainees")
+        mockMvc.perform(post(URL_TEMPLATE)
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                         .param("firstName", "John")
                         .param("lastName", "Doe"))
@@ -73,7 +75,6 @@ public class TraineeControllerTest {
     @Test
     @WithMockUser
     void changeLogin() throws Exception {
-
         String credentialsUpdateDTOJson = JsonPath.parse(new HashMap<String, Object>() {{
             put("username", "John.Doe");
             put("oldPassword", "1234567890");
@@ -82,7 +83,7 @@ public class TraineeControllerTest {
 
         when(traineeService.changePassword(any())).thenReturn(trainee);
 
-        mockMvc.perform(put("/api/trainees/change-login")
+        mockMvc.perform(put(URL_TEMPLATE + "/change-login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(credentialsUpdateDTOJson))
                 .andExpect(status().isOk());
@@ -93,7 +94,7 @@ public class TraineeControllerTest {
     void getTraineeByUsername() throws Exception {
         when(traineeService.getTraineeByUsername(anyString())).thenReturn(trainee);
 
-        mockMvc.perform(get("/api/trainees/John.Doe")
+        mockMvc.perform(get(URL_TEMPLATE + "/John.Doe")
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED))
                 .andExpect(status().isOk());
     }
@@ -109,7 +110,7 @@ public class TraineeControllerTest {
 
         when(traineeService.updateTrainee(any())).thenReturn(trainee);
 
-        mockMvc.perform(put("/api/trainees")
+        mockMvc.perform(put(URL_TEMPLATE)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(traineeUpdateDTOJson))
                 .andExpect(status().isOk());
@@ -121,7 +122,7 @@ public class TraineeControllerTest {
         String username = "John.Doe";
         when(traineeService.deleteTrainee(username)).thenReturn(true);
 
-        mockMvc.perform(delete("/api/trainees")
+        mockMvc.perform(delete(URL_TEMPLATE)
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                         .param("username", "John.Doe"))
                 .andExpect(status().isOk());
@@ -134,7 +135,7 @@ public class TraineeControllerTest {
         boolean isActive = true;
         when(traineeService.toggleTraineeActivation(username, isActive)).thenReturn(true);
 
-        mockMvc.perform(patch("/api/trainees")
+        mockMvc.perform(patch(URL_TEMPLATE)
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                         .param("username", "John.Doe")
                         .param("isActive", "true"))

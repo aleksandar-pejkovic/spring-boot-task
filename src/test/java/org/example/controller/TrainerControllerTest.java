@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import org.example.dto.credentials.CredentialsUpdateDTO;
 import org.example.enums.TrainingTypeName;
 import org.example.model.Trainer;
 import org.example.model.TrainingType;
@@ -34,6 +33,8 @@ import com.jayway.jsonpath.JsonPath;
 @SpringBootTest
 @AutoConfigureMockMvc
 class TrainerControllerTest {
+
+    private static final String URL_TEMPLATE = "/api/trainers";
 
     @Autowired
     private MockMvc mockMvc;
@@ -72,7 +73,7 @@ class TrainerControllerTest {
 
         when(trainerService.createTrainer(anyString(), anyString(), any())).thenReturn(trainer);
 
-        mockMvc.perform(post("/api/trainers")
+        mockMvc.perform(post(URL_TEMPLATE)
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                         .param("firstName", "John")
                         .param("lastName", "Doe")
@@ -92,7 +93,7 @@ class TrainerControllerTest {
 
         when(trainerService.changePassword(any())).thenReturn(trainer);
 
-        mockMvc.perform(put("/api/trainers/change-login")
+        mockMvc.perform(put(URL_TEMPLATE + "/change-login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(credentialsUpdateDTOJson))
                 .andExpect(status().isOk());
@@ -103,7 +104,7 @@ class TrainerControllerTest {
     void getTrainerByUsername() throws Exception {
         when(trainerService.getTrainerByUsername(any())).thenReturn(trainer);
 
-        mockMvc.perform(get("/api/trainers/John.Doe")
+        mockMvc.perform(get(URL_TEMPLATE + "/John.Doe")
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED))
                 .andExpect(status().isOk());
     }
@@ -121,7 +122,7 @@ class TrainerControllerTest {
             put("isActive", "true");
         }}).jsonString();
 
-        mockMvc.perform(put("/api/trainers")
+        mockMvc.perform(put(URL_TEMPLATE)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(trainerUpdateDTOJson))
                 .andExpect(status().isOk());
@@ -133,7 +134,7 @@ class TrainerControllerTest {
         List<Trainer> unassignedTrainers = new ArrayList<>();
         when(trainerService.getNotAssignedTrainerList(any())).thenReturn(unassignedTrainers);
 
-        mockMvc.perform(get("/api/trainers/unassigned")
+        mockMvc.perform(get(URL_TEMPLATE + "/unassigned")
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                         .param("traineeUsername", "John.Doe"))
                 .andExpect(status().isOk());
@@ -146,7 +147,7 @@ class TrainerControllerTest {
         when(trainerService.updateTraineeTrainerList(any(), any()))
                 .thenReturn(updatedTraineeTrainerList);
 
-        mockMvc.perform(put("/api/trainers/{traineeUsername}/updateTrainers", "John.Doe")
+        mockMvc.perform(put(URL_TEMPLATE + "/{traineeUsername}/updateTrainers", "John.Doe")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"trainerUsernameList\":[\"Trainer1\", \"Trainer2\", \"Trainer3\"]}"))
                 .andExpect(status().isOk());
@@ -159,7 +160,7 @@ class TrainerControllerTest {
         boolean isActive = true;
         when(trainerService.toggleTrainerActivation(username, isActive)).thenReturn(true);
 
-        mockMvc.perform(patch("/api/trainers")
+        mockMvc.perform(patch(URL_TEMPLATE)
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                         .param("username", "John.Doe")
                         .param("isActive", "true"))

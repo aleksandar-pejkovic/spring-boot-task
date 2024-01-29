@@ -31,6 +31,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class TrainingService {
 
+    private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
+
     private final TrainingRepository trainingRepository;
 
     private final TraineeRepository traineeRepository;
@@ -140,9 +142,8 @@ public class TrainingService {
 
     private void validateDates(Date periodFrom, Date periodTo) {
         if (periodTo.before(periodFrom)) {
-            SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy.");
-            String periodFromStr = dateFormat.format(periodFrom);
-            String periodToStr = dateFormat.format(toString());
+            String periodFromStr = SIMPLE_DATE_FORMAT.format(periodFrom);
+            String periodToStr = SIMPLE_DATE_FORMAT.format(toString());
 
             String errorMessage = String.format(
                     "'Period to' date %s must be after 'period from' date %s",
