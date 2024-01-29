@@ -59,7 +59,7 @@ public class TraineeService {
         Trainee trainee = getTraineeByUsername(credentialsUpdateDTO.getUsername());
         if (!credentialsUpdateDTO.getOldPassword().equals(trainee.getPassword())) {
             throw new IncorrectPasswordException("Wrong password!");
-        } else if (credentialsUpdateDTO.getOldPassword().equals(credentialsUpdateDTO.getNewPassword())) {
+        } else if (credentialsUpdateDTO.getNewPassword().equals(trainee.getPassword())) {
             throw new IdenticalPasswordException("New password must be different than old password");
         }
         trainee.setPassword(credentialsUpdateDTO.getNewPassword());

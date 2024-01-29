@@ -1,6 +1,7 @@
 package org.example.controller;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.example.dto.credentials.CredentialsDTO;
 import org.example.dto.credentials.CredentialsUpdateDTO;
@@ -14,6 +15,7 @@ import org.example.service.TrainerService;
 import org.example.utils.converter.TrainerConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -58,7 +60,7 @@ public class TrainerController {
     public ResponseEntity<Boolean> changeLogin(@Valid @RequestBody CredentialsUpdateDTO credentialsUpdateDTO) {
         log.info("Endpoint '/api/trainers/change-login' was called to update trainers credentials");
         Trainer trainerAfterUpdate = trainerService.changePassword(credentialsUpdateDTO);
-        return (credentialsUpdateDTO.getNewPassword().equals(trainerAfterUpdate.getPassword()))
+        return Optional.ofNullable(trainerAfterUpdate).isPresent()
                 ? ResponseEntity.ok(true)
                 : ResponseEntity.badRequest().body(false);
     }
@@ -93,6 +95,15 @@ public class TrainerController {
                 + "list");
         List<Trainer> updatedTraineeTrainerList = trainerService.updateTraineeTrainerList(traineeUsername, trainerListDTO);
         return TrainerConverter.convertToEmbeddedDtoList(updatedTraineeTrainerList);
+    }
+
+    @DeleteMapping
+    public ResponseEntity<Boolean> deleteTraineeProfile(@RequestParam String username) {
+        log.info("Endpoint '/api/trainers' was called to delete trainer profile");
+        boolean successfulDeletion = trainerService.deleteTrainer(username);
+        return successfulDeletion
+                ? ResponseEntity.ok(true)
+                : ResponseEntity.badRequest().body(false);
     }
 
     @PatchMapping

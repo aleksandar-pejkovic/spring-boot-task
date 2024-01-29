@@ -7,6 +7,8 @@ import org.example.dto.credentials.CredentialsUpdateDTO;
 import org.example.dto.trainer.TrainerListDTO;
 import org.example.dto.trainer.TrainerUpdateDTO;
 import org.example.enums.TrainingTypeName;
+import org.example.exception.credentials.IdenticalPasswordException;
+import org.example.exception.credentials.IncorrectPasswordException;
 import org.example.exception.notfound.TrainerNotFoundException;
 import org.example.exception.notfound.TrainingTypeNotFoundException;
 import org.example.model.Trainee;
@@ -70,6 +72,11 @@ public class TrainerService {
     @Transactional
     public Trainer changePassword(CredentialsUpdateDTO credentialsUpdateDTO) {
         Trainer trainer = getTrainerByUsername(credentialsUpdateDTO.getUsername());
+        if (!credentialsUpdateDTO.getOldPassword().equals(trainer.getPassword())) {
+            throw new IncorrectPasswordException("Wrong password!");
+        } else if (credentialsUpdateDTO.getNewPassword().equals(trainer.getPassword())) {
+            throw new IdenticalPasswordException("New password must be different than old password");
+        }
         trainer.setPassword(credentialsUpdateDTO.getNewPassword());
         Trainer updatedTrainer = trainerRepository.save(trainer);
         log.info("Password successfully updated");
@@ -100,7 +107,7 @@ public class TrainerService {
     }
 
     @Transactional
-    public boolean deleteTrainer(String username, String password) {
+    public boolean deleteTrainer(String username) {
         boolean deletionResult = trainerRepository.deleteByUserUsername(username);
         if (deletionResult) {
             log.info("Trainer successfully deleted");

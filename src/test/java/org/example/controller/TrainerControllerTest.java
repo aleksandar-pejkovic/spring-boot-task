@@ -1,12 +1,16 @@
 package org.example.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.ArrayList;
@@ -69,8 +73,6 @@ class TrainerControllerTest {
 
     @Test
     void traineeRegistration() throws Exception {
-        TrainingTypeName specialization = TrainingTypeName.AEROBIC;
-
         when(trainerService.createTrainer(anyString(), anyString(), any())).thenReturn(trainer);
 
         mockMvc.perform(post(URL_TEMPLATE)
@@ -78,13 +80,14 @@ class TrainerControllerTest {
                         .param("firstName", "John")
                         .param("lastName", "Doe")
                         .param("specialization", TrainingTypeName.AEROBIC.name()))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.username").value("John.Doe"));
     }
 
     @Test
     @WithMockUser
     void changeLogin() throws Exception {
-
         String credentialsUpdateDTOJson = JsonPath.parse(new HashMap<String, Object>() {{
             put("username", "John.Doe");
             put("oldPassword", "1234567890");
@@ -101,12 +104,32 @@ class TrainerControllerTest {
 
     @Test
     @WithMockUser
+    void changeLoginReturnBadRequestWhenTrainerIsNull() throws Exception {
+        String credentialsUpdateDTOJson = JsonPath.parse(new HashMap<String, Object>() {{
+            put("username", "John.Doe");
+            put("oldPassword", "1234567890");
+            put("newPassword", "0123456789");
+        }}).jsonString();
+
+        when(trainerService.changePassword(any())).thenReturn(null);
+
+        mockMvc.perform(put(URL_TEMPLATE + "/change-login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(credentialsUpdateDTOJson))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
     void getTrainerByUsername() throws Exception {
         when(trainerService.getTrainerByUsername(any())).thenReturn(trainer);
 
         mockMvc.perform(get(URL_TEMPLATE + "/John.Doe")
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED))
-                .andExpect(status().isOk());
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.username").value("John.Doe"))
+                .andExpect(jsonPath("$.firstName").value("John"))
+                .andExpect(jsonPath("$.lastName").value("Doe"));
     }
 
     @Test
@@ -125,7 +148,32 @@ class TrainerControllerTest {
         mockMvc.perform(put(URL_TEMPLATE)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(trainerUpdateDTOJson))
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.username").value("John.Doe"))
+                .andExpect(jsonPath("$.firstName").value("John"))
+                .andExpect(jsonPath("$.lastName").value("Doe"));
+    }
+
+    @Test
+    @WithMockUser
+    void deleteTrainerProfile() throws Exception {
+        when(trainerService.deleteTrainer(anyString())).thenReturn(true);
+
+        mockMvc.perform(delete(URL_TEMPLATE)
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("username", "John.Doe"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser
+    void deleteTrainerProfileReturnsBadRequestWhenDeletionUnsuccessful() throws Exception {
+        when(trainerService.deleteTrainer(anyString())).thenReturn(false);
+
+        mockMvc.perform(delete(URL_TEMPLATE)
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("username", "John.Doe"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -165,5 +213,17 @@ class TrainerControllerTest {
                         .param("username", "John.Doe")
                         .param("isActive", "true"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser
+    void toggleTrainerActivationReturnsBadRequestWhenToggleUnsuccessful() throws Exception {
+        when(trainerService.toggleTrainerActivation(anyString(), anyBoolean())).thenReturn(false);
+
+        mockMvc.perform(patch(URL_TEMPLATE)
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("username", "John.Doe")
+                        .param("isActive", "true"))
+                .andExpect(status().isBadRequest());
     }
 }

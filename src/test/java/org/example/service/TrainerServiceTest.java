@@ -174,11 +174,10 @@ class TrainerServiceTest {
     void deleteTrainer() {
         // Arrange
         String username = "testUser";
-        String password = "testPassword";
         when(trainerRepository.deleteByUserUsername(username)).thenReturn(true);
 
         // Act
-        boolean result = trainerService.deleteTrainer(username, password);
+        boolean result = trainerService.deleteTrainer(username);
 
         // Assert
         verify(trainerRepository, times(1)).deleteByUserUsername(username);

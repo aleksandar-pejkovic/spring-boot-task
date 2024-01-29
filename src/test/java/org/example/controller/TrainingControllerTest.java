@@ -84,6 +84,25 @@ class TrainingControllerTest {
 
     @Test
     @WithMockUser
+    void addTrainingReturnsBadRequestWhenCreateTrainingUnsuccessful() throws Exception {
+        String trainingCreateDTOJson = JsonPath.parse(new HashMap<String, Object>() {{
+            put("traineeUsername", "John.Doe");
+            put("trainerUsername", "Max.Biaggi");
+            put("trainingTypeName", "AEROBIC");
+            put("trainingDate", "2024-01-07");
+            put("trainingDuration", 30);
+        }}).jsonString();
+
+        when(trainingService.createTraining(any())).thenReturn(false);
+
+        mockMvc.perform(post(URL_TEMPLATE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(trainingCreateDTOJson))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
     void getAllTrainingTypes() throws Exception {
         List<TrainingTypeDTO> trainingTypes = new ArrayList<>();
         when(trainingService.finaAllTrainingTypes()).thenReturn(trainingTypes);

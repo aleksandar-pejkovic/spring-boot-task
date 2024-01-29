@@ -1,6 +1,7 @@
 package org.example.controller;
 
 import java.util.Date;
+import java.util.Optional;
 
 import org.example.dto.credentials.CredentialsDTO;
 import org.example.dto.credentials.CredentialsUpdateDTO;
@@ -57,7 +58,7 @@ public class TraineeController {
     public ResponseEntity<Boolean> changeLogin(@Valid @RequestBody CredentialsUpdateDTO credentialsUpdateDTO) {
         log.info("Endpoint '/api/trainees/change-login' was called to update trainee's credentials");
         Trainee traineeAfterUpdate = traineeService.changePassword(credentialsUpdateDTO);
-        return credentialsUpdateDTO.getNewPassword().equals(traineeAfterUpdate.getPassword())
+        return Optional.ofNullable(traineeAfterUpdate).isPresent()
                 ? ResponseEntity.ok(true)
                 : ResponseEntity.badRequest().body(false);
     }

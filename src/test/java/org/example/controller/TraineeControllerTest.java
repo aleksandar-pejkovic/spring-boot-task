@@ -1,6 +1,7 @@
 package org.example.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -8,6 +9,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.ArrayList;
@@ -69,7 +72,9 @@ public class TraineeControllerTest {
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                         .param("firstName", "John")
                         .param("lastName", "Doe"))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.username").value("John.Doe"));
     }
 
     @Test
@@ -91,12 +96,33 @@ public class TraineeControllerTest {
 
     @Test
     @WithMockUser
+    void changeLoginReturnBadRequestWhenTraineeIsNull() throws Exception {
+        String credentialsUpdateDTOJson = JsonPath.parse(new HashMap<String, Object>() {{
+            put("username", "John.Doe");
+            put("oldPassword", "1234567890");
+            put("newPassword", "0123456789");
+        }}).jsonString();
+
+        when(traineeService.changePassword(any())).thenReturn(null);
+
+        mockMvc.perform(put(URL_TEMPLATE + "/change-login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(credentialsUpdateDTOJson))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
     void getTraineeByUsername() throws Exception {
         when(traineeService.getTraineeByUsername(anyString())).thenReturn(trainee);
 
         mockMvc.perform(get(URL_TEMPLATE + "/John.Doe")
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.username").value("John.Doe"))
+                .andExpect(jsonPath("$.firstName").value("John"))
+                .andExpect(jsonPath("$.lastName").value("Doe"));
     }
 
     @Test
@@ -113,14 +139,17 @@ public class TraineeControllerTest {
         mockMvc.perform(put(URL_TEMPLATE)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(traineeUpdateDTOJson))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.username").value("John.Doe"))
+                .andExpect(jsonPath("$.firstName").value("John"))
+                .andExpect(jsonPath("$.lastName").value("Doe"));
     }
 
     @Test
     @WithMockUser
     void deleteTraineeProfile() throws Exception {
-        String username = "John.Doe";
-        when(traineeService.deleteTrainee(username)).thenReturn(true);
+        when(traineeService.deleteTrainee(anyString())).thenReturn(true);
 
         mockMvc.perform(delete(URL_TEMPLATE)
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -130,15 +159,36 @@ public class TraineeControllerTest {
 
     @Test
     @WithMockUser
+    void deleteTraineeProfileReturnsBadRequestWhenDeletionUnsuccessful() throws Exception {
+        when(traineeService.deleteTrainee(anyString())).thenReturn(false);
+
+        mockMvc.perform(delete(URL_TEMPLATE)
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("username", "John.Doe"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
     void toggleTraineeActivation() throws Exception {
-        String username = "John.Doe";
-        boolean isActive = true;
-        when(traineeService.toggleTraineeActivation(username, isActive)).thenReturn(true);
+        when(traineeService.toggleTraineeActivation(anyString(), anyBoolean())).thenReturn(true);
 
         mockMvc.perform(patch(URL_TEMPLATE)
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                         .param("username", "John.Doe")
                         .param("isActive", "true"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser
+    void toggleTraineeActivationReturnsBadRequestWhenToggleUnsuccessful() throws Exception {
+        when(traineeService.toggleTraineeActivation(anyString(), anyBoolean())).thenReturn(false);
+
+        mockMvc.perform(patch(URL_TEMPLATE)
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("username", "John.Doe")
+                        .param("isActive", "true"))
+                .andExpect(status().isBadRequest());
     }
 }
