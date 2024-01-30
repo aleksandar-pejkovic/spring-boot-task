@@ -110,8 +110,8 @@ class TrainingServiceTest {
     }
 
     @Test
-    void createTraining() {
-        // Arrange
+    @DisplayName("Should return true when createTraining")
+    void shouldReturnTrueWhenCreateTraining() {
         TrainingCreateDTO trainingCreateDTO = createTrainingCreateDTO();
 
         when(traineeRepository.findByUserUsername(anyString())).thenReturn(Optional.of(trainee));
@@ -119,10 +119,8 @@ class TrainingServiceTest {
         when(trainingTypeRepository.findByTrainingTypeName(any())).thenReturn(Optional.of(training.getTrainingType()));
         when(trainingRepository.save(any())).thenReturn(training);
 
-        // Act
         boolean result = trainingService.createTraining(trainingCreateDTO);
 
-        // Assert
         ArgumentCaptor<Training> trainingCaptor = ArgumentCaptor.forClass(Training.class);
         verify(trainingRepository, times(1)).save(trainingCaptor.capture());
         assertTrue(result);
@@ -131,8 +129,8 @@ class TrainingServiceTest {
 
 
     @Test
-    @DisplayName("createTraining throws TraineeNotFoundException when Trainee is not found")
-    void createTrainingThrowsTraineeNotFoundExceptionWhenTraineeNotFound() {
+    @DisplayName("Should throw TraineeNotFoundException for invalid traineeUsername when createTraining")
+    void shouldThrowTraineeNotFoundExceptionForInvalidTraineeUsernameWhenCreateTraining() {
         TrainingCreateDTO trainingCreateDTO = createTrainingCreateDTO();
         when(traineeRepository.findByUserUsername(any())).thenReturn(Optional.empty());
 
@@ -142,8 +140,8 @@ class TrainingServiceTest {
     }
 
     @Test
-    @DisplayName("createTraining throws TrainerNotFoundException when Trainer is not found")
-    void createTrainingThrowsTrainerNotFoundExceptionWhenTrainerNotFound() {
+    @DisplayName("Should throw TrainerNotFoundException for invalid trainerUsername when createTraining")
+    void shouldThrowTrainerNotFoundExceptionForInvalidTrainerUsernameWhenCreateTraining() {
         TrainingCreateDTO trainingCreateDTO = createTrainingCreateDTO();
         when(trainerRepository.findByUserUsername(any())).thenReturn(Optional.empty());
 
@@ -153,8 +151,8 @@ class TrainingServiceTest {
     }
 
     @Test
-    @DisplayName("createTraining throws TrainingTypeNotFoundException when TrainingType is not found")
-    void createTrainingThrowsTrainingTypeNotFoundExceptionWhenTrainerNotFound() {
+    @DisplayName("Should throw TrainingTypeNotFound for invalid trainingTypeName when createTraining")
+    void shouldThrowTrainingTypeNotFoundExceptionForInvalidTrainingTypeNameWhenCreateTraining() {
         TrainingCreateDTO trainingCreateDTO = createTrainingCreateDTO();
         when(trainingTypeRepository.findByTrainingTypeName(any())).thenReturn(Optional.empty());
 
@@ -164,52 +162,45 @@ class TrainingServiceTest {
     }
 
     @Test
-    void getTrainingById() {
-        // Arrange
+    @DisplayName("Should return Training when getTrainingById")
+    void shouldReturnTrainingWhenGetTrainingById() {
         when(trainingRepository.findById(1L)).thenReturn(Optional.of(training));
 
-        // Act
         Training result = trainingService.getTrainingById(1L);
 
-        // Assert
         verify(trainingRepository, times(1)).findById(1L);
         assertEquals(training, result);
     }
 
     @Test
-    void updateTraining() {
-        // Arrange
+    @DisplayName("Should return Training when updateTraining")
+    void shouldReturnTrainingWhenUpdateTraining() {
         when(trainingRepository.save(training)).thenReturn(training);
 
-        // Act
         Training result = trainingService.updateTraining(training);
 
-        // Assert
         verify(trainingRepository, times(1)).save(training);
         assertEquals(training, result);
     }
 
     @Test
-    void deleteTraining() {
-        // Arrange
+    @DisplayName("Should return true when deleteTraining")
+    void shouldReturnTrueWhenDeleteTraining() {
         doNothing().when(trainingRepository).delete(training);
 
-        // Act
         boolean result = trainingService.deleteTraining(training);
 
-        // Assert
         verify(trainingRepository, times(1)).delete(training);
         assertTrue(result);
     }
 
     @Test
-    void getTraineeTrainingList() {
-        // Arrange
+    @DisplayName("Should return list of trainings when getTraineeTrainingList")
+    void shouldReturnTrainingListWhenGetTraineeTrainingList() {
         int trainingDuration = 10;
         List<Training> expectedTrainingList = Collections.singletonList(training);
         when(trainingRepository.findByTraineeUserUsernameAndTrainingDateBetweenAndTrainerUserUsernameAndTrainingTypeTrainingTypeName(anyString(), any(), any(), anyString(), anyString())).thenReturn(expectedTrainingList);
 
-        // Act
         List<Training> result = trainingService.getTraineeTrainingList(
                 trainee.getUsername(),
                 new Date(),
@@ -218,19 +209,17 @@ class TrainingServiceTest {
                 training.getTrainingType().getTrainingTypeName().name()
         );
 
-        // Assert
         verify(trainingRepository, times(1)).findByTraineeUserUsernameAndTrainingDateBetweenAndTrainerUserUsernameAndTrainingTypeTrainingTypeName(anyString(), any(), any(), anyString(), anyString());
         assertEquals(expectedTrainingList, result);
     }
 
     @Test
-    void getTrainerTrainingList() {
-        // Arrange
+    @DisplayName("Should return list of trainings when getTrainerTrainingList")
+    void shouldReturnTrainingListWhenGetTrainerTrainingList() {
         int trainingDuration = 10;
         List<Training> expectedTrainingList = Collections.singletonList(training);
         when(trainingRepository.findByTrainerUserUsernameAndTrainingDateBetweenAndTraineeUserUsername(anyString(), any(), any(), anyString())).thenReturn(expectedTrainingList);
 
-        // Act
         List<Training> result = trainingService.getTrainerTrainingList(
                 trainer.getUsername(),
                 new Date(),
@@ -238,21 +227,18 @@ class TrainingServiceTest {
                 training.getTrainee().getUsername()
         );
 
-        // Assert
         verify(trainingRepository, times(1)).findByTrainerUserUsernameAndTrainingDateBetweenAndTraineeUserUsername(anyString(), any(), any(), anyString());
         assertEquals(expectedTrainingList, result);
     }
 
     @Test
-    void getAllTrainings() {
-        // Arrange
+    @DisplayName("Should return list of trainings when getAllTrainings")
+    void shouldReturnTrainingListWhenGetAllTrainings() {
         List<Training> expectedTrainingList = Collections.singletonList(training);
         when(trainingRepository.findAll()).thenReturn(expectedTrainingList);
 
-        // Act
         List<Training> result = trainingService.getAllTrainings();
 
-        // Assert
         verify(trainingRepository, times(1)).findAll();
         assertEquals(expectedTrainingList, result);
     }
