@@ -2,7 +2,9 @@ package org.example.dto.trainer;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
+import lombok.Getter;
 
+@Getter
 @Builder
 public class TrainerEmbeddedDTO {
 

@@ -16,7 +16,6 @@ public class TraineeConverter {
         List<TrainerEmbeddedDTO> trainerEmbeddedDTOList = TrainerConverter.convertToEmbeddedDtoList(entity.getTrainerList());
 
         return TraineeDTO.builder()
-                .id(entity.getId())
                 .username(entity.getUsername())
                 .firstName(entity.getUser().getFirstName())
                 .lastName(entity.getUser().getLastName())

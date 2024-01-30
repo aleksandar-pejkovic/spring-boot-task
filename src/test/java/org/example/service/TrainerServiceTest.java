@@ -20,12 +20,14 @@ import org.example.enums.TrainingTypeName;
 import org.example.exception.credentials.IdenticalPasswordException;
 import org.example.exception.credentials.IncorrectPasswordException;
 import org.example.exception.notfound.TrainerNotFoundException;
+import org.example.exception.notfound.TrainingTypeNotFoundException;
 import org.example.model.Trainer;
 import org.example.model.TrainingType;
-import org.example.model.User;
+import org.example.repository.TraineeRepository;
 import org.example.repository.TrainerRepository;
 import org.example.repository.TrainingTypeRepository;
 import org.example.utils.credentials.CredentialsGenerator;
+import org.example.utils.dummydata.TrainerDummyDataFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -43,6 +45,9 @@ class TrainerServiceTest {
     private TrainerRepository trainerRepository;
 
     @MockBean
+    private TraineeRepository traineeRepository;
+
+    @MockBean
     private TrainingTypeRepository trainingTypeRepository;
 
     @MockBean
@@ -51,25 +56,11 @@ class TrainerServiceTest {
     @Autowired
     private TrainerService trainerService;
 
-    private Trainer trainer;
+    private Trainer trainerUnderTest;
 
     @BeforeEach
-    void setUp() throws Exception {
-        User user = User.builder()
-                .isActive(true)
-                .lastName("Rossi")
-                .firstName("Valentino")
-                .username("Valentino.Rossi")
-                .password("0123456789")
-                .build();
-
-        trainer = Trainer.builder()
-                .user(user)
-                .specialization(TrainingType.builder()
-                        .id(1L)
-                        .trainingTypeName(TrainingTypeName.AEROBIC)
-                        .build())
-                .build();
+    void setUp() {
+        trainerUnderTest = TrainerDummyDataFactory.getTrainerUnderTestingJoeJohnson();
     }
 
     @Test
@@ -81,27 +72,27 @@ class TrainerServiceTest {
                 .build();
 
         when(trainingTypeRepository.findByTrainingTypeName(any())).thenReturn(Optional.of(trainingType));
-        when(credentialsGenerator.generateUsername(any())).thenReturn("Valentino.Rossi");
-        when(credentialsGenerator.generateRandomPassword()).thenReturn("9876543210");
-        when(trainerRepository.save(any())).thenReturn(trainer);
+        when(credentialsGenerator.generateUsername(any())).thenReturn("Joe.Johnson");
+        when(credentialsGenerator.generateRandomPassword()).thenReturn("0123456789");
+        when(trainerRepository.save(any())).thenReturn(trainerUnderTest);
 
-        Trainer result = trainerService.createTrainer(trainer.getUser().getFirstName(),
-                trainer.getUser().getLastName(), trainer.getSpecialization().getTrainingTypeName());
+        Trainer result = trainerService.createTrainer(trainerUnderTest.getUser().getFirstName(),
+                trainerUnderTest.getUser().getLastName(), trainerUnderTest.getSpecialization().getTrainingTypeName());
 
         verify(trainerRepository, times(1)).save(any());
-        assertEquals("Valentino.Rossi", result.getUsername());
+        assertEquals("Joe.Johnson", result.getUsername());
         assertEquals("0123456789", result.getPassword());
     }
 
     @Test
     @DisplayName("Should return Trainee when getTraineeByUsername")
     void shouldReturnTrainerWhenGetTrainerByUsername() {
-        when(trainerRepository.findByUserUsername(anyString())).thenReturn(Optional.of(trainer));
+        when(trainerRepository.findByUserUsername(anyString())).thenReturn(Optional.of(trainerUnderTest));
 
-        Trainer result = trainerService.getTrainerByUsername("username");
+        Trainer result = trainerService.getTrainerByUsername("Joe.Johnson");
 
         verify(trainerRepository, times(1)).findByUserUsername(anyString());
-        assertEquals(trainer, result);
+        assertEquals(trainerUnderTest, result);
     }
 
     @Test
@@ -110,26 +101,23 @@ class TrainerServiceTest {
         when(trainerRepository.findByUserUsername(anyString())).thenReturn(Optional.empty());
 
         assertThrows(TrainerNotFoundException.class,
-                () -> trainerService.getTrainerByUsername("username"));
+                () -> trainerService.getTrainerByUsername("Joe.Johnson"));
 
-        verify(trainerRepository, times(1)).findByUserUsername("username");
+        verify(trainerRepository, times(1)).findByUserUsername("Joe.Johnson");
     }
 
     @Test
     @DisplayName("Should return Trainee when changePassword")
     void shouldReturnTrainerWhenChangePassword() {
-        CredentialsUpdateDTO credentialsUpdateDTO = CredentialsUpdateDTO.builder()
-                .username("testUser")
-                .oldPassword("0123456789")
-                .newPassword("newPassword")
-                .build();
+        CredentialsUpdateDTO credentialsUpdateDTO =
+                createCredentialsUpdateDTO("0123456789", "newPassword");
 
-        when(trainerRepository.findByUserUsername(any())).thenReturn(Optional.ofNullable(trainer));
-        when(trainerRepository.save(trainer)).thenReturn(trainer);
+        when(trainerRepository.findByUserUsername(any())).thenReturn(Optional.ofNullable(trainerUnderTest));
+        when(trainerRepository.save(trainerUnderTest)).thenReturn(trainerUnderTest);
 
         Trainer result = trainerService.changePassword(credentialsUpdateDTO);
 
-        verify(trainerRepository, times(1)).save(trainer);
+        verify(trainerRepository, times(1)).save(trainerUnderTest);
         assertEquals(credentialsUpdateDTO.getNewPassword(), result.getPassword());
     }
 
@@ -139,7 +127,7 @@ class TrainerServiceTest {
         CredentialsUpdateDTO credentialsUpdateDTO =
                 createCredentialsUpdateDTO("wrongOldPassword", "newPassword");
 
-        when(trainerRepository.findByUserUsername(any())).thenReturn(Optional.ofNullable(trainer));
+        when(trainerRepository.findByUserUsername(any())).thenReturn(Optional.ofNullable(trainerUnderTest));
 
         assertThrows(IncorrectPasswordException.class, () -> trainerService.changePassword(credentialsUpdateDTO));
 
@@ -152,7 +140,7 @@ class TrainerServiceTest {
         CredentialsUpdateDTO credentialsUpdateDTO =
                 createCredentialsUpdateDTO("0123456789", "0123456789");
 
-        when(trainerRepository.findByUserUsername(any())).thenReturn(Optional.ofNullable(trainer));
+        when(trainerRepository.findByUserUsername(any())).thenReturn(Optional.ofNullable(trainerUnderTest));
 
         assertThrows(IdenticalPasswordException.class, () -> trainerService.changePassword(credentialsUpdateDTO));
 
@@ -167,14 +155,14 @@ class TrainerServiceTest {
                 .trainingTypeName(TrainingTypeName.AEROBIC)
                 .build();
 
-        when(trainerRepository.findByUserUsername(any())).thenReturn(Optional.of(trainer));
+        when(trainerRepository.findByUserUsername(any())).thenReturn(Optional.of(trainerUnderTest));
         when(trainingTypeRepository.findByTrainingTypeName(any())).thenReturn(Optional.of(trainingType));
-        when(trainerRepository.save(trainer)).thenReturn(trainer);
+        when(trainerRepository.save(trainerUnderTest)).thenReturn(trainerUnderTest);
         TrainerUpdateDTO trainerUpdateDTO = createTrainerUpdateDTO();
 
         trainerService.updateTrainer(trainerUpdateDTO);
 
-        verify(trainerRepository, times(1)).save(trainer);
+        verify(trainerRepository, times(1)).save(trainerUnderTest);
     }
 
     @Test
@@ -182,10 +170,10 @@ class TrainerServiceTest {
     void shouldThrowTrainingTypeNotFoundExceptionForIncorrectTrainingTypeNameWhenUpdateTrainer() {
         TrainerUpdateDTO trainerUpdateDTO = createTrainerUpdateDTO();
 
-        when(trainerRepository.findByUserUsername(any())).thenReturn(Optional.of(trainer));
+        when(trainerRepository.findByUserUsername(any())).thenReturn(Optional.of(trainerUnderTest));
         when(trainingTypeRepository.findByTrainingTypeName(any())).thenReturn(Optional.empty());
 
-        assertThrows(TrainerNotFoundException.class, () -> trainerService.updateTrainer(trainerUpdateDTO));
+        assertThrows(TrainingTypeNotFoundException.class, () -> trainerService.updateTrainer(trainerUpdateDTO));
 
         verify(trainerRepository, never()).save(any());
     }
@@ -193,12 +181,12 @@ class TrainerServiceTest {
     @Test
     @DisplayName("Should return true when toggleTrainerActivation")
     void shouldReturnTrueWhenToggleTrainerActivation() {
-        when(trainerRepository.findByUserUsername(anyString())).thenReturn(Optional.of(trainer));
-        when(trainerRepository.save(trainer)).thenReturn(trainer);
+        when(trainerRepository.findByUserUsername(anyString())).thenReturn(Optional.of(trainerUnderTest));
+        when(trainerRepository.save(trainerUnderTest)).thenReturn(trainerUnderTest);
 
-        boolean result = trainerService.toggleTrainerActivation(trainer.getUsername(), trainer.getUser().isActive());
+        boolean result = trainerService.toggleTrainerActivation(trainerUnderTest.getUsername(), trainerUnderTest.getUser().isActive());
 
-        verify(trainerRepository, times(1)).save(trainer);
+        verify(trainerRepository, times(1)).save(trainerUnderTest);
         assertTrue(result);
     }
 
@@ -228,8 +216,7 @@ class TrainerServiceTest {
     @Test
     @DisplayName("Should return list of trainers when getNotAssignedTrainerList")
     void shouldReturnTrainerListWhenGetNotAssignedTrainerList() {
-        String traineeUsername = "traineeUser";
-        String password = "testPassword";
+        String traineeUsername = "John.Doe";
         List<Trainer> expectedTrainers = Collections.singletonList(new Trainer());
         when(trainerRepository.findByTraineeListUserUsernameAndUserIsActiveIsTrueOrTraineeListIsNull(traineeUsername)).thenReturn(expectedTrainers);
 
@@ -254,7 +241,7 @@ class TrainerServiceTest {
     private CredentialsUpdateDTO createCredentialsUpdateDTO(String oldPassword,
                                                             String newPassword) {
         return CredentialsUpdateDTO.builder()
-                .username("testUser")
+                .username("Joe.Johnson")
                 .oldPassword(oldPassword)
                 .newPassword(newPassword)
                 .build();
@@ -262,11 +249,11 @@ class TrainerServiceTest {
 
     private TrainerUpdateDTO createTrainerUpdateDTO() {
         return TrainerUpdateDTO.builder()
-                .username(trainer.getUsername())
-                .firstName(trainer.getUser().getFirstName())
-                .lastName(trainer.getUser().getLastName())
-                .specialization(trainer.getSpecialization().getTrainingTypeName())
-                .isActive(trainer.getUser().isActive())
+                .username(trainerUnderTest.getUsername())
+                .firstName(trainerUnderTest.getUser().getFirstName())
+                .lastName(trainerUnderTest.getUser().getLastName())
+                .specialization(trainerUnderTest.getSpecialization().getTrainingTypeName())
+                .isActive(trainerUnderTest.getUser().isActive())
                 .build();
     }
 }

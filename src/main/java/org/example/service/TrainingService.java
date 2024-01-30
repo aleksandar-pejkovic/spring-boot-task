@@ -51,7 +51,6 @@ public class TrainingService {
 
     @Transactional
     public boolean createTraining(TrainingCreateDTO trainingCreateDTO) {
-
         Trainee trainee = traineeRepository.findByUserUsername(trainingCreateDTO.getTraineeUsername())
                 .orElseThrow(() -> new TraineeNotFoundException("Trainee not found"));
         Trainer trainer = trainerRepository.findByUserUsername(trainingCreateDTO.getTrainerUsername())

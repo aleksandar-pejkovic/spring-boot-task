@@ -11,7 +11,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,9 +20,9 @@ import org.example.exception.credentials.IdenticalPasswordException;
 import org.example.exception.credentials.IncorrectPasswordException;
 import org.example.exception.notfound.TraineeNotFoundException;
 import org.example.model.Trainee;
-import org.example.model.User;
 import org.example.repository.TraineeRepository;
 import org.example.utils.credentials.CredentialsGenerator;
+import org.example.utils.dummydata.TraineeDummyDataFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -46,53 +45,41 @@ class TraineeServiceTest {
     @Autowired
     private TraineeService traineeService;
 
-    private Trainee trainee;
+    private Trainee traineeUnderTest;
 
     @BeforeEach
-    void setUp() throws Exception {
-        User user = User.builder()
-                .isActive(true)
-                .lastName("Biaggi")
-                .firstName("Max")
-                .username("Max.Biaggi")
-                .password("0123456789")
-                .build();
-
-        trainee = Trainee.builder()
-                .user(user)
-                .address("11000 Belgrade")
-                .dateOfBirth(new Date())
-                .build();
+    void setUp() {
+        traineeUnderTest = TraineeDummyDataFactory.getTraineeUnderTestJohnDoe();
     }
 
     @Test
     @DisplayName("Should return Trainee when createTrainee")
     void shouldReturnTraineeWhenCreateTrainee() {
-        when(credentialsGenerator.generateUsername(any())).thenReturn("Max.Biaggi");
+        when(credentialsGenerator.generateUsername(any())).thenReturn("John.Doe");
         when(credentialsGenerator.generateRandomPassword()).thenReturn("0123456789");
-        when(traineeRepository.save(any())).thenReturn(trainee);
+        when(traineeRepository.save(any())).thenReturn(traineeUnderTest);
 
         Trainee result = traineeService.createTrainee(
-                trainee.getUser().getFirstName(),
-                trainee.getUser().getLastName(),
-                trainee.getDateOfBirth(),
-                trainee.getAddress()
+                traineeUnderTest.getUser().getFirstName(),
+                traineeUnderTest.getUser().getLastName(),
+                traineeUnderTest.getDateOfBirth(),
+                traineeUnderTest.getAddress()
         );
 
         verify(traineeRepository, times(1)).save(any());
-        assertEquals("Max.Biaggi", result.getUsername());
+        assertEquals("John.Doe", result.getUsername());
         assertEquals("0123456789", result.getPassword());
     }
 
     @Test
     @DisplayName("Should return Trainee when getTraineeByUsername")
     void shouldReturnTraineeWhenGetTraineeByUsername() {
-        when(traineeRepository.findByUserUsername(anyString())).thenReturn(Optional.of(trainee));
+        when(traineeRepository.findByUserUsername(anyString())).thenReturn(Optional.of(traineeUnderTest));
 
-        Trainee result = traineeService.getTraineeByUsername("username");
+        Trainee result = traineeService.getTraineeByUsername("John.Doe");
 
-        verify(traineeRepository, times(1)).findByUserUsername("username");
-        assertEquals(trainee, result);
+        verify(traineeRepository, times(1)).findByUserUsername("John.Doe");
+        assertEquals(traineeUnderTest, result);
     }
 
     @Test
@@ -100,9 +87,9 @@ class TraineeServiceTest {
     void shouldThrowTraineeNotFoundExceptionForInvalidUsernameWhenGetTraineeByUsername() {
         when(traineeRepository.findByUserUsername(anyString())).thenReturn(Optional.empty());
 
-        assertThrows(TraineeNotFoundException.class, () -> traineeService.getTraineeByUsername("username"));
+        assertThrows(TraineeNotFoundException.class, () -> traineeService.getTraineeByUsername("John.Doe"));
 
-        verify(traineeRepository, times(1)).findByUserUsername("username");
+        verify(traineeRepository, times(1)).findByUserUsername("John.Doe");
     }
 
     @Test
@@ -111,12 +98,12 @@ class TraineeServiceTest {
         CredentialsUpdateDTO credentialsUpdateDTO =
                 createCredentialsUpdateDTO("0123456789", "newPassword");
 
-        when(traineeRepository.findByUserUsername(any())).thenReturn(Optional.ofNullable(trainee));
-        when(traineeRepository.save(any())).thenReturn(trainee);
+        when(traineeRepository.findByUserUsername(any())).thenReturn(Optional.ofNullable(traineeUnderTest));
+        when(traineeRepository.save(any())).thenReturn(traineeUnderTest);
 
         Trainee result = traineeService.changePassword(credentialsUpdateDTO);
 
-        verify(traineeRepository, times(1)).save(trainee);
+        verify(traineeRepository, times(1)).save(traineeUnderTest);
         assertEquals(credentialsUpdateDTO.getNewPassword(), result.getPassword());
     }
 
@@ -126,7 +113,7 @@ class TraineeServiceTest {
         CredentialsUpdateDTO credentialsUpdateDTO =
                 createCredentialsUpdateDTO("wrongOldPassword", "newPassword");
 
-        when(traineeRepository.findByUserUsername(any())).thenReturn(Optional.ofNullable(trainee));
+        when(traineeRepository.findByUserUsername(any())).thenReturn(Optional.ofNullable(traineeUnderTest));
 
         assertThrows(IncorrectPasswordException.class, () -> traineeService.changePassword(credentialsUpdateDTO));
 
@@ -139,7 +126,7 @@ class TraineeServiceTest {
         CredentialsUpdateDTO credentialsUpdateDTO =
                 createCredentialsUpdateDTO("0123456789", "0123456789");
 
-        when(traineeRepository.findByUserUsername(any())).thenReturn(Optional.ofNullable(trainee));
+        when(traineeRepository.findByUserUsername(any())).thenReturn(Optional.ofNullable(traineeUnderTest));
 
         assertThrows(IdenticalPasswordException.class, () -> traineeService.changePassword(credentialsUpdateDTO));
 
@@ -149,25 +136,25 @@ class TraineeServiceTest {
     @Test
     @DisplayName("Should return Trainee when updateTrainee")
     void shouldReturnTraineeWhenUpdateTrainee() {
-        when(traineeRepository.findByUserUsername(anyString())).thenReturn(Optional.of(trainee));
-        when(traineeRepository.save(trainee)).thenReturn(trainee);
+        when(traineeRepository.findByUserUsername(anyString())).thenReturn(Optional.of(traineeUnderTest));
+        when(traineeRepository.save(traineeUnderTest)).thenReturn(traineeUnderTest);
 
         TraineeUpdateDTO traineeUpdateDTO = createTraineeUpdateDTO();
         Trainee result = traineeService.updateTrainee(traineeUpdateDTO);
 
-        verify(traineeRepository, times(1)).save(trainee);
-        assertEquals(trainee, result);
+        verify(traineeRepository, times(1)).save(traineeUnderTest);
+        assertEquals(traineeUnderTest, result);
     }
 
     @Test
     @DisplayName("Should return true when toggleTraineeActivation")
     void shouldReturnTrueWhenToggleTraineeActivation() {
-        when(traineeRepository.findByUserUsername(anyString())).thenReturn(Optional.of(trainee));
-        when(traineeRepository.save(trainee)).thenReturn(trainee);
+        when(traineeRepository.findByUserUsername(anyString())).thenReturn(Optional.of(traineeUnderTest));
+        when(traineeRepository.save(traineeUnderTest)).thenReturn(traineeUnderTest);
 
-        boolean result = traineeService.toggleTraineeActivation(trainee.getUsername(), trainee.getUser().isActive());
+        boolean result = traineeService.toggleTraineeActivation(traineeUnderTest.getUsername(), traineeUnderTest.getUser().isActive());
 
-        verify(traineeRepository, times(1)).save(trainee);
+        verify(traineeRepository, times(1)).save(traineeUnderTest);
         assertTrue(result);
     }
 
@@ -209,7 +196,7 @@ class TraineeServiceTest {
     private CredentialsUpdateDTO createCredentialsUpdateDTO(String oldPassword,
                                                             String newPassword) {
         return CredentialsUpdateDTO.builder()
-                .username("testUser")
+                .username("John.Doe")
                 .oldPassword(oldPassword)
                 .newPassword(newPassword)
                 .build();
@@ -217,12 +204,12 @@ class TraineeServiceTest {
 
     private TraineeUpdateDTO createTraineeUpdateDTO() {
         return TraineeUpdateDTO.builder()
-                .username(trainee.getUsername())
-                .firstName(trainee.getUser().getFirstName())
-                .lastName(trainee.getUser().getLastName())
-                .dateOfBirth(trainee.getDateOfBirth())
-                .address(trainee.getAddress())
-                .isActive(trainee.getUser().isActive())
+                .username(traineeUnderTest.getUsername())
+                .firstName(traineeUnderTest.getUser().getFirstName())
+                .lastName(traineeUnderTest.getUser().getLastName())
+                .dateOfBirth(traineeUnderTest.getDateOfBirth())
+                .address(traineeUnderTest.getAddress())
+                .isActive(traineeUnderTest.getUser().isActive())
                 .build();
     }
 }

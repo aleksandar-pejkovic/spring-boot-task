@@ -13,13 +13,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 
 import org.example.model.Trainee;
-import org.example.model.User;
 import org.example.service.TraineeService;
+import org.example.utils.dummydata.TraineeDummyDataFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,29 +42,16 @@ public class TraineeControllerTest {
     @MockBean
     private TraineeService traineeService;
 
-    private Trainee trainee;
+    private Trainee traineeUnderTest;
 
     @BeforeEach
-    void setUp() throws Exception {
-        User user = User.builder()
-                .isActive(true)
-                .lastName("Doe")
-                .firstName("John")
-                .username("John.Doe")
-                .password("0123456789")
-                .build();
-
-        trainee = Trainee.builder()
-                .user(user)
-                .address("11000 Belgrade")
-                .dateOfBirth(new Date())
-                .trainerList(new ArrayList<>())
-                .build();
+    void setUp() {
+        traineeUnderTest = TraineeDummyDataFactory.getTraineeUnderTestJohnDoe();
     }
 
     @Test
     void traineeRegistration() throws Exception {
-        when(traineeService.createTrainee(any(), any(), any(), any())).thenReturn(trainee);
+        when(traineeService.createTrainee(any(), any(), any(), any())).thenReturn(traineeUnderTest);
 
         mockMvc.perform(post(URL_TEMPLATE)
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -86,7 +71,7 @@ public class TraineeControllerTest {
             put("newPassword", "0123456789");
         }}).jsonString();
 
-        when(traineeService.changePassword(any())).thenReturn(trainee);
+        when(traineeService.changePassword(any())).thenReturn(traineeUnderTest);
 
         mockMvc.perform(put(URL_TEMPLATE + "/change-login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -114,7 +99,7 @@ public class TraineeControllerTest {
     @Test
     @WithMockUser
     void getTraineeByUsername() throws Exception {
-        when(traineeService.getTraineeByUsername(anyString())).thenReturn(trainee);
+        when(traineeService.getTraineeByUsername(anyString())).thenReturn(traineeUnderTest);
 
         mockMvc.perform(get(URL_TEMPLATE + "/John.Doe")
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED))
@@ -134,7 +119,7 @@ public class TraineeControllerTest {
             put("lastName", "Doe");
         }}).jsonString();
 
-        when(traineeService.updateTrainee(any())).thenReturn(trainee);
+        when(traineeService.updateTrainee(any())).thenReturn(traineeUnderTest);
 
         mockMvc.perform(put(URL_TEMPLATE)
                         .contentType(MediaType.APPLICATION_JSON)

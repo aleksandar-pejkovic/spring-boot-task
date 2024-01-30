@@ -46,7 +46,7 @@ class TrainingControllerTest {
 
         mockMvc.perform(get(URL_TEMPLATE + "/trainee")
                         .param("username", "John.Doe")
-                        .param("trainerName", "Max.Biaggi")
+                        .param("trainerName", "Joe.Johnson")
                         .param("trainingType", "AEROBIC"))
                 .andExpect(status().isOk());
     }
@@ -59,7 +59,7 @@ class TrainingControllerTest {
                 .thenReturn(trainings);
 
         mockMvc.perform(get(URL_TEMPLATE + "/trainer")
-                        .param("username", "John.Doe"))
+                        .param("username", "Joe.Johnson"))
                 .andExpect(status().isOk());
     }
 
@@ -68,7 +68,7 @@ class TrainingControllerTest {
     void addTraining() throws Exception {
         String trainingCreateDTOJson = JsonPath.parse(new HashMap<String, Object>() {{
             put("traineeUsername", "John.Doe");
-            put("trainerUsername", "Max.Biaggi");
+            put("trainerUsername", "Joe.Johnson");
             put("trainingTypeName", "AEROBIC");
             put("trainingDate", "2024-01-07");
             put("trainingDuration", 30);
@@ -87,7 +87,7 @@ class TrainingControllerTest {
     void addTrainingReturnsBadRequestWhenCreateTrainingUnsuccessful() throws Exception {
         String trainingCreateDTOJson = JsonPath.parse(new HashMap<String, Object>() {{
             put("traineeUsername", "John.Doe");
-            put("trainerUsername", "Max.Biaggi");
+            put("trainerUsername", "Joe.Johnson");
             put("trainingTypeName", "AEROBIC");
             put("trainingDate", "2024-01-07");
             put("trainingDuration", 30);

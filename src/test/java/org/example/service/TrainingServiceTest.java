@@ -10,26 +10,21 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
 import org.example.dto.training.TrainingCreateDTO;
-import org.example.enums.TrainingTypeName;
 import org.example.exception.notfound.TraineeNotFoundException;
 import org.example.exception.notfound.TrainerNotFoundException;
 import org.example.exception.notfound.TrainingTypeNotFoundException;
-import org.example.model.Trainee;
-import org.example.model.Trainer;
 import org.example.model.Training;
-import org.example.model.TrainingType;
-import org.example.model.User;
 import org.example.repository.TraineeRepository;
 import org.example.repository.TrainerRepository;
 import org.example.repository.TrainingRepository;
 import org.example.repository.TrainingTypeRepository;
+import org.example.utils.dummydata.TrainingDummyDataFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -59,54 +54,11 @@ class TrainingServiceTest {
     @Autowired
     private TrainingService trainingService;
 
-    private Training training;
-
-    private Trainee trainee;
-
-    private Trainer trainer;
+    private Training trainingUnderTest;
 
     @BeforeEach
-    void setUp() throws Exception {
-        User user1 = User.builder()
-                .isActive(true)
-                .lastName("Biaggi")
-                .firstName("Max")
-                .username("Max.Biaggi")
-                .password("0123456789")
-                .build();
-
-        User user2 = User.builder()
-                .isActive(true)
-                .lastName("Storrari")
-                .firstName("Matteo")
-                .username("Matteo.Storrari")
-                .password("0123456789")
-                .build();
-
-        trainee = Trainee.builder()
-                .user(user1)
-                .address("11000 Belgrade")
-                .dateOfBirth(new Date())
-                .trainerList(new ArrayList<>())
-                .trainingList(new ArrayList<>())
-                .build();
-
-        trainer = Trainer.builder()
-                .user(user2)
-                .traineeList(new ArrayList<>())
-                .trainingList(new ArrayList<>())
-                .build();
-
-        training = new Training();
-        training.setId(1L);
-        training.setTrainee(trainee);
-        training.setTrainer(trainer);
-        training.setTrainingType(
-                TrainingType.builder()
-                        .id(1L)
-                        .trainingTypeName(TrainingTypeName.AEROBIC)
-                        .build()
-        );
+    void setUp() {
+        trainingUnderTest = TrainingDummyDataFactory.getTrainingUnderTest();
     }
 
     @Test
@@ -114,17 +66,17 @@ class TrainingServiceTest {
     void shouldReturnTrueWhenCreateTraining() {
         TrainingCreateDTO trainingCreateDTO = createTrainingCreateDTO();
 
-        when(traineeRepository.findByUserUsername(anyString())).thenReturn(Optional.of(trainee));
-        when(trainerRepository.findByUserUsername(anyString())).thenReturn(Optional.of(trainer));
-        when(trainingTypeRepository.findByTrainingTypeName(any())).thenReturn(Optional.of(training.getTrainingType()));
-        when(trainingRepository.save(any())).thenReturn(training);
+        when(traineeRepository.findByUserUsername(anyString())).thenReturn(Optional.of(trainingUnderTest.getTrainee()));
+        when(trainerRepository.findByUserUsername(anyString())).thenReturn(Optional.of(trainingUnderTest.getTrainer()));
+        when(trainingTypeRepository.findByTrainingTypeName(any())).thenReturn(Optional.of(trainingUnderTest.getTrainingType()));
+        when(trainingRepository.save(any())).thenReturn(trainingUnderTest);
 
         boolean result = trainingService.createTraining(trainingCreateDTO);
 
         ArgumentCaptor<Training> trainingCaptor = ArgumentCaptor.forClass(Training.class);
         verify(trainingRepository, times(1)).save(trainingCaptor.capture());
         assertTrue(result);
-        assertEquals(training.getTrainingDuration(), trainingCaptor.getValue().getTrainingDuration());
+        assertEquals(trainingUnderTest.getTrainingDuration(), trainingCaptor.getValue().getTrainingDuration());
     }
 
 
@@ -143,7 +95,8 @@ class TrainingServiceTest {
     @DisplayName("Should throw TrainerNotFoundException for invalid trainerUsername when createTraining")
     void shouldThrowTrainerNotFoundExceptionForInvalidTrainerUsernameWhenCreateTraining() {
         TrainingCreateDTO trainingCreateDTO = createTrainingCreateDTO();
-        when(trainerRepository.findByUserUsername(any())).thenReturn(Optional.empty());
+        when(traineeRepository.findByUserUsername(anyString())).thenReturn(Optional.of(trainingUnderTest.getTrainee()));
+        when(trainerRepository.findByUserUsername(anyString())).thenReturn(Optional.empty());
 
         assertThrows(TrainerNotFoundException.class, () -> trainingService.createTraining(trainingCreateDTO));
 
@@ -154,6 +107,8 @@ class TrainingServiceTest {
     @DisplayName("Should throw TrainingTypeNotFound for invalid trainingTypeName when createTraining")
     void shouldThrowTrainingTypeNotFoundExceptionForInvalidTrainingTypeNameWhenCreateTraining() {
         TrainingCreateDTO trainingCreateDTO = createTrainingCreateDTO();
+        when(traineeRepository.findByUserUsername(anyString())).thenReturn(Optional.of(trainingUnderTest.getTrainee()));
+        when(trainerRepository.findByUserUsername(anyString())).thenReturn(Optional.of(trainingUnderTest.getTrainer()));
         when(trainingTypeRepository.findByTrainingTypeName(any())).thenReturn(Optional.empty());
 
         assertThrows(TrainingTypeNotFoundException.class, () -> trainingService.createTraining(trainingCreateDTO));
@@ -164,49 +119,48 @@ class TrainingServiceTest {
     @Test
     @DisplayName("Should return Training when getTrainingById")
     void shouldReturnTrainingWhenGetTrainingById() {
-        when(trainingRepository.findById(1L)).thenReturn(Optional.of(training));
+        when(trainingRepository.findById(1L)).thenReturn(Optional.of(trainingUnderTest));
 
         Training result = trainingService.getTrainingById(1L);
 
         verify(trainingRepository, times(1)).findById(1L);
-        assertEquals(training, result);
+        assertEquals(trainingUnderTest, result);
     }
 
     @Test
     @DisplayName("Should return Training when updateTraining")
     void shouldReturnTrainingWhenUpdateTraining() {
-        when(trainingRepository.save(training)).thenReturn(training);
+        when(trainingRepository.save(trainingUnderTest)).thenReturn(trainingUnderTest);
 
-        Training result = trainingService.updateTraining(training);
+        Training result = trainingService.updateTraining(trainingUnderTest);
 
-        verify(trainingRepository, times(1)).save(training);
-        assertEquals(training, result);
+        verify(trainingRepository, times(1)).save(trainingUnderTest);
+        assertEquals(trainingUnderTest, result);
     }
 
     @Test
     @DisplayName("Should return true when deleteTraining")
     void shouldReturnTrueWhenDeleteTraining() {
-        doNothing().when(trainingRepository).delete(training);
+        doNothing().when(trainingRepository).delete(trainingUnderTest);
 
-        boolean result = trainingService.deleteTraining(training);
+        boolean result = trainingService.deleteTraining(trainingUnderTest);
 
-        verify(trainingRepository, times(1)).delete(training);
+        verify(trainingRepository, times(1)).delete(trainingUnderTest);
         assertTrue(result);
     }
 
     @Test
     @DisplayName("Should return list of trainings when getTraineeTrainingList")
     void shouldReturnTrainingListWhenGetTraineeTrainingList() {
-        int trainingDuration = 10;
-        List<Training> expectedTrainingList = Collections.singletonList(training);
+        List<Training> expectedTrainingList = Collections.singletonList(trainingUnderTest);
         when(trainingRepository.findByTraineeUserUsernameAndTrainingDateBetweenAndTrainerUserUsernameAndTrainingTypeTrainingTypeName(anyString(), any(), any(), anyString(), anyString())).thenReturn(expectedTrainingList);
 
         List<Training> result = trainingService.getTraineeTrainingList(
-                trainee.getUsername(),
+                trainingUnderTest.getTrainee().getUsername(),
                 new Date(),
                 new Date(),
-                training.getTrainer().getUsername(),
-                training.getTrainingType().getTrainingTypeName().name()
+                trainingUnderTest.getTrainer().getUsername(),
+                trainingUnderTest.getTrainingType().getTrainingTypeName().name()
         );
 
         verify(trainingRepository, times(1)).findByTraineeUserUsernameAndTrainingDateBetweenAndTrainerUserUsernameAndTrainingTypeTrainingTypeName(anyString(), any(), any(), anyString(), anyString());
@@ -216,15 +170,14 @@ class TrainingServiceTest {
     @Test
     @DisplayName("Should return list of trainings when getTrainerTrainingList")
     void shouldReturnTrainingListWhenGetTrainerTrainingList() {
-        int trainingDuration = 10;
-        List<Training> expectedTrainingList = Collections.singletonList(training);
+        List<Training> expectedTrainingList = Collections.singletonList(trainingUnderTest);
         when(trainingRepository.findByTrainerUserUsernameAndTrainingDateBetweenAndTraineeUserUsername(anyString(), any(), any(), anyString())).thenReturn(expectedTrainingList);
 
         List<Training> result = trainingService.getTrainerTrainingList(
-                trainer.getUsername(),
+                trainingUnderTest.getTrainer().getUsername(),
                 new Date(),
                 new Date(),
-                training.getTrainee().getUsername()
+                trainingUnderTest.getTrainee().getUsername()
         );
 
         verify(trainingRepository, times(1)).findByTrainerUserUsernameAndTrainingDateBetweenAndTraineeUserUsername(anyString(), any(), any(), anyString());
@@ -234,7 +187,7 @@ class TrainingServiceTest {
     @Test
     @DisplayName("Should return list of trainings when getAllTrainings")
     void shouldReturnTrainingListWhenGetAllTrainings() {
-        List<Training> expectedTrainingList = Collections.singletonList(training);
+        List<Training> expectedTrainingList = Collections.singletonList(trainingUnderTest);
         when(trainingRepository.findAll()).thenReturn(expectedTrainingList);
 
         List<Training> result = trainingService.getAllTrainings();
@@ -245,11 +198,11 @@ class TrainingServiceTest {
 
     private TrainingCreateDTO createTrainingCreateDTO() {
         return TrainingCreateDTO.builder()
-                .traineeUsername(training.getTrainee().getUsername())
-                .trainerUsername(training.getTrainer().getUsername())
-                .trainingTypeName(training.getTrainingType().getTrainingTypeName())
-                .trainingDate(training.getTrainingDate())
-                .trainingDuration(training.getTrainingDuration())
+                .traineeUsername(trainingUnderTest.getTrainee().getUsername())
+                .trainerUsername(trainingUnderTest.getTrainer().getUsername())
+                .trainingTypeName(trainingUnderTest.getTrainingType().getTrainingTypeName())
+                .trainingDate(trainingUnderTest.getTrainingDate())
+                .trainingDuration(trainingUnderTest.getTrainingDuration())
                 .build();
     }
 }
