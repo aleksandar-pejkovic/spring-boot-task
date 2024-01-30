@@ -3,6 +3,8 @@ package org.example.controller;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -15,6 +17,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.HashMap;
 
+import org.example.exception.notfound.TraineeNotFoundException;
 import org.example.model.Trainee;
 import org.example.service.TraineeService;
 import org.example.utils.dummydata.TraineeDummyDataFactory;
@@ -25,6 +28,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithAnonymousUser;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -113,6 +117,16 @@ public class TraineeControllerTest {
 
     @Test
     @WithMockUser
+    void shouldReturnNotFoundForBadUsernameWhenGetTraineeByUsername() throws Exception {
+        when(traineeService.getTraineeByUsername(anyString())).thenThrow(new TraineeNotFoundException("Trainee not found"));
+
+        mockMvc.perform(get(URL_TEMPLATE + "/John.Doe")
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser
     void updateTraineeProfile() throws Exception {
         String traineeUpdateDTOJson = JsonPath.parse(new HashMap<String, Object>() {{
             put("username", "John.Doe");
@@ -176,5 +190,41 @@ public class TraineeControllerTest {
                         .param("username", "John.Doe")
                         .param("isActive", "true"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithAnonymousUser
+    void shouldReturnUnauthorizedForUnauthenticatedUser() throws Exception {
+        mockMvc.perform(patch(URL_TEMPLATE)
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("username", "John.Doe")
+                        .param("isActive", "true"))
+                .andExpect(status().isUnauthorized());
+
+        verify(traineeService, never()).toggleTraineeActivation(anyString(), anyBoolean());
+    }
+
+    @Test
+    @WithMockUser(username = "John.Doe", authorities = {"ROLE_TEST"})
+    void shouldReturnForbiddenForUnauthorizedUser() throws Exception {
+        mockMvc.perform(patch(URL_TEMPLATE)
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("username", "John.Doe")
+                        .param("isActive", "true"))
+                .andExpect(status().is3xxRedirection());
+
+        verify(traineeService, never()).toggleTraineeActivation(anyString(), anyBoolean());
+    }
+
+    @Test
+    @WithAnonymousUser
+    void shouldReturnUnAuthorizedForAnonymousUser() throws Exception {
+        mockMvc.perform(patch(URL_TEMPLATE)
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("username", "John.Doe")
+                        .param("isActive", "true"))
+                .andExpect(status().isUnauthorized());
+
+        verify(traineeService, never()).toggleTraineeActivation(anyString(), anyBoolean());
     }
 }

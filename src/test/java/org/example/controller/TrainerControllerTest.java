@@ -3,6 +3,8 @@ package org.example.controller;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -18,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import org.example.enums.TrainingTypeName;
+import org.example.exception.notfound.TrainerNotFoundException;
 import org.example.model.Trainer;
 import org.example.service.TrainerService;
 import org.example.utils.dummydata.TrainerDummyDataFactory;
@@ -28,6 +31,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithAnonymousUser;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -112,6 +116,17 @@ class TrainerControllerTest {
                 .andExpect(jsonPath("$.username").value("Joe.Johnson"))
                 .andExpect(jsonPath("$.firstName").value("Joe"))
                 .andExpect(jsonPath("$.lastName").value("Johnson"));
+    }
+
+    @Test
+    @WithMockUser
+    void shouldReturnNotFoundForBadUsernameWhenGetTrainerByUsername() throws Exception {
+        when(trainerService.getTrainerByUsername(anyString())).thenThrow(new TrainerNotFoundException("Trainer not " +
+                "found"));
+
+        mockMvc.perform(get(URL_TEMPLATE + "/John.Doe")
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -207,5 +222,41 @@ class TrainerControllerTest {
                         .param("username", "Joe.Johnson")
                         .param("isActive", "true"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithAnonymousUser
+    void shouldReturnUnauthorizedForUnauthenticatedUser() throws Exception {
+        mockMvc.perform(patch(URL_TEMPLATE)
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("username", "John.Doe")
+                        .param("isActive", "true"))
+                .andExpect(status().isUnauthorized());
+
+        verify(trainerService, never()).toggleTrainerActivation(anyString(), anyBoolean());
+    }
+
+    @Test
+    @WithMockUser(username = "John.Doe", authorities = {"ROLE_TEST"})
+    void shouldReturnForbiddenForUnauthorizedUser() throws Exception {
+        mockMvc.perform(patch(URL_TEMPLATE)
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("username", "John.Doe")
+                        .param("isActive", "true"))
+                .andExpect(status().is3xxRedirection());
+
+        verify(trainerService, never()).toggleTrainerActivation(anyString(), anyBoolean());
+    }
+
+    @Test
+    @WithAnonymousUser
+    void shouldReturnUnAuthorizedForAnonymousUser() throws Exception {
+        mockMvc.perform(patch(URL_TEMPLATE)
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("username", "John.Doe")
+                        .param("isActive", "true"))
+                .andExpect(status().isUnauthorized());
+
+        verify(trainerService, never()).toggleTrainerActivation(anyString(), anyBoolean());
     }
 }

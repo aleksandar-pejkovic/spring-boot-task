@@ -12,6 +12,7 @@ import org.example.service.TraineeService;
 import org.example.utils.converter.TraineeConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -86,6 +87,7 @@ public class TraineeController {
                 : ResponseEntity.badRequest().body(false);
     }
 
+    @Secured("ROLE_ADMIN")
     @PatchMapping
     public ResponseEntity<Boolean> toggleTraineeActivation(@RequestParam String username,
                                                            @RequestParam boolean isActive) {
