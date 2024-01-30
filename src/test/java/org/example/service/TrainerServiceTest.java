@@ -1,9 +1,11 @@
 package org.example.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -15,15 +17,17 @@ import java.util.Optional;
 import org.example.dto.credentials.CredentialsUpdateDTO;
 import org.example.dto.trainer.TrainerUpdateDTO;
 import org.example.enums.TrainingTypeName;
+import org.example.exception.credentials.IdenticalPasswordException;
+import org.example.exception.credentials.IncorrectPasswordException;
+import org.example.exception.notfound.TrainerNotFoundException;
 import org.example.model.Trainer;
 import org.example.model.TrainingType;
 import org.example.model.User;
-import org.example.repository.TraineeRepository;
 import org.example.repository.TrainerRepository;
-import org.example.repository.TrainingRepository;
 import org.example.repository.TrainingTypeRepository;
 import org.example.utils.credentials.CredentialsGenerator;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,13 +40,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 class TrainerServiceTest {
 
     @MockBean
-    private TraineeRepository traineeRepository;
-
-    @MockBean
     private TrainerRepository trainerRepository;
-
-    @MockBean
-    private TrainingRepository trainingRepository;
 
     @MockBean
     private TrainingTypeRepository trainingTypeRepository;
@@ -98,16 +96,25 @@ class TrainerServiceTest {
     @Test
     void getTrainerByUsername() {
         // Arrange
-        String username = "testUser";
-        Trainer expectedTrainer = new Trainer();
-        when(trainerRepository.findByUserUsername(username)).thenReturn(Optional.of(expectedTrainer));
+        when(trainerRepository.findByUserUsername(anyString())).thenReturn(Optional.of(trainer));
 
         // Act
-        Trainer result = trainerService.getTrainerByUsername(username);
+        Trainer result = trainerService.getTrainerByUsername("username");
 
         // Assert
-        verify(trainerRepository, times(1)).findByUserUsername(username);
-        assertEquals(expectedTrainer, result);
+        verify(trainerRepository, times(1)).findByUserUsername(anyString());
+        assertEquals(trainer, result);
+    }
+
+    @Test
+    @DisplayName("getTrainerByUsername throws TrainerNotFoundException when Trainer is not found")
+    void getTrainerByUsernameThrowsTrainerNotFoundExceptionWhenTrainerIsNotFound() {
+        when(trainerRepository.findByUserUsername(anyString())).thenReturn(Optional.empty());
+
+        assertThrows(TrainerNotFoundException.class,
+                () -> trainerService.getTrainerByUsername("username"));
+
+        verify(trainerRepository, times(1)).findByUserUsername("username");
     }
 
     @Test
@@ -128,6 +135,38 @@ class TrainerServiceTest {
         // Assert
         verify(trainerRepository, times(1)).save(trainer);
         assertEquals(credentialsUpdateDTO.getNewPassword(), result.getPassword());
+    }
+
+    @Test
+    @DisplayName("changePassword throws IncorrectPasswordException when old password is incorrect")
+    void changePasswordThrowsIncorrectPasswordExceptionWhenOldPasswordIsWrong() {
+        CredentialsUpdateDTO credentialsUpdateDTO = CredentialsUpdateDTO.builder()
+                .username("testUser")
+                .oldPassword("wrongOldPassword")
+                .newPassword("newPassword")
+                .build();
+
+        when(trainerRepository.findByUserUsername(any())).thenReturn(Optional.ofNullable(trainer));
+
+        assertThrows(IncorrectPasswordException.class, () -> trainerService.changePassword(credentialsUpdateDTO));
+
+        verify(trainerRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("changePassword teturns IdenticalPasswordException when new password is the same as old password")
+    void changePasswordThrowsIdenticalPasswordExceptionWhenNewPasswordEqualsOldPassword() {
+        CredentialsUpdateDTO credentialsUpdateDTO = CredentialsUpdateDTO.builder()
+                .username("testUser")
+                .oldPassword("0123456789")
+                .newPassword("0123456789")
+                .build();
+
+        when(trainerRepository.findByUserUsername(any())).thenReturn(Optional.ofNullable(trainer));
+
+        assertThrows(IdenticalPasswordException.class, () -> trainerService.changePassword(credentialsUpdateDTO));
+
+        verify(trainerRepository, never()).save(any());
     }
 
     @Test
@@ -157,6 +196,25 @@ class TrainerServiceTest {
     }
 
     @Test
+    @DisplayName("updateTrainer throws TrainingTypeNotFoundException when TrainingType is not found")
+    void updateTrainerThrowsTrainingTypeNotFoundExceptionWhenTrainingTypeNotFound() {
+        TrainerUpdateDTO trainerUpdateDTO = TrainerUpdateDTO.builder()
+                .username(trainer.getUsername())
+                .firstName(trainer.getUser().getFirstName())
+                .lastName(trainer.getUser().getLastName())
+                .specialization(trainer.getSpecialization().getTrainingTypeName())
+                .isActive(trainer.getUser().isActive())
+                .build();
+
+        when(trainerRepository.findByUserUsername(any())).thenReturn(Optional.of(trainer));
+        when(trainingTypeRepository.findByTrainingTypeName(any())).thenReturn(Optional.empty());
+
+        assertThrows(TrainerNotFoundException.class, () -> trainerService.updateTrainer(trainerUpdateDTO));
+
+        verify(trainerRepository, never()).save(any());
+    }
+
+    @Test
     void toggleTrainerActivationTest() {
         // Arrange
         when(trainerRepository.findByUserUsername(anyString())).thenReturn(Optional.of(trainer));
@@ -168,6 +226,17 @@ class TrainerServiceTest {
         // Assert
         verify(trainerRepository, times(1)).save(trainer);
         assertTrue(result);
+    }
+
+    @Test
+    @DisplayName("toggleTrainerActivation throws TrainerNotFoundException when Trainer is not found")
+    void toggleTraineeActivationThrowsTraineeNotFoundExceptionWhenUserNotFound() {
+        when(trainerRepository.findByUserUsername(anyString())).thenReturn(Optional.empty());
+
+        assertThrows(TrainerNotFoundException.class,
+                () -> trainerService.toggleTrainerActivation("Bad.Username", true));
+
+        verify(trainerRepository, never()).save(any());
     }
 
     @Test

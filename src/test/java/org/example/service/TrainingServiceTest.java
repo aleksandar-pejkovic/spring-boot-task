@@ -1,6 +1,7 @@
 package org.example.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -17,6 +18,9 @@ import java.util.Optional;
 
 import org.example.dto.training.TrainingCreateDTO;
 import org.example.enums.TrainingTypeName;
+import org.example.exception.notfound.TraineeNotFoundException;
+import org.example.exception.notfound.TrainerNotFoundException;
+import org.example.exception.notfound.TrainingTypeNotFoundException;
 import org.example.model.Trainee;
 import org.example.model.Trainer;
 import org.example.model.Training;
@@ -27,6 +31,7 @@ import org.example.repository.TrainerRepository;
 import org.example.repository.TrainingRepository;
 import org.example.repository.TrainingTypeRepository;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -107,13 +112,7 @@ class TrainingServiceTest {
     @Test
     void createTraining() {
         // Arrange
-        TrainingCreateDTO trainingCreateDTO = TrainingCreateDTO.builder()
-                .traineeUsername(training.getTrainee().getUsername())
-                .trainerUsername(training.getTrainer().getUsername())
-                .trainingTypeName(training.getTrainingType().getTrainingTypeName())
-                .trainingDate(training.getTrainingDate())
-                .trainingDuration(training.getTrainingDuration())
-                .build();
+        TrainingCreateDTO trainingCreateDTO = createTrainingCreateDTO();
 
         when(traineeRepository.findByUserUsername(anyString())).thenReturn(Optional.of(trainee));
         when(trainerRepository.findByUserUsername(anyString())).thenReturn(Optional.of(trainer));
@@ -128,6 +127,40 @@ class TrainingServiceTest {
         verify(trainingRepository, times(1)).save(trainingCaptor.capture());
         assertTrue(result);
         assertEquals(training.getTrainingDuration(), trainingCaptor.getValue().getTrainingDuration());
+    }
+
+
+    @Test
+    @DisplayName("createTraining throws TraineeNotFoundException when Trainee is not found")
+    void createTrainingThrowsTraineeNotFoundExceptionWhenTraineeNotFound() {
+        TrainingCreateDTO trainingCreateDTO = createTrainingCreateDTO();
+        when(traineeRepository.findByUserUsername(any())).thenReturn(Optional.empty());
+
+        assertThrows(TraineeNotFoundException.class, () -> trainingService.createTraining(trainingCreateDTO));
+
+        verify(traineeRepository, times(1)).findByUserUsername(trainingCreateDTO.getTraineeUsername());
+    }
+
+    @Test
+    @DisplayName("createTraining throws TrainerNotFoundException when Trainer is not found")
+    void createTrainingThrowsTrainerNotFoundExceptionWhenTrainerNotFound() {
+        TrainingCreateDTO trainingCreateDTO = createTrainingCreateDTO();
+        when(trainerRepository.findByUserUsername(any())).thenReturn(Optional.empty());
+
+        assertThrows(TrainerNotFoundException.class, () -> trainingService.createTraining(trainingCreateDTO));
+
+        verify(trainerRepository, times(1)).findByUserUsername(trainingCreateDTO.getTrainerUsername());
+    }
+
+    @Test
+    @DisplayName("createTraining throws TrainingTypeNotFoundException when TrainingType is not found")
+    void createTrainingThrowsTrainingTypeNotFoundExceptionWhenTrainerNotFound() {
+        TrainingCreateDTO trainingCreateDTO = createTrainingCreateDTO();
+        when(trainingTypeRepository.findByTrainingTypeName(any())).thenReturn(Optional.empty());
+
+        assertThrows(TrainingTypeNotFoundException.class, () -> trainingService.createTraining(trainingCreateDTO));
+
+        verify(trainingTypeRepository, times(1)).findByTrainingTypeName(trainingCreateDTO.getTrainingTypeName());
     }
 
     @Test
@@ -224,4 +257,13 @@ class TrainingServiceTest {
         assertEquals(expectedTrainingList, result);
     }
 
+    private TrainingCreateDTO createTrainingCreateDTO() {
+        return TrainingCreateDTO.builder()
+                .traineeUsername(training.getTrainee().getUsername())
+                .trainerUsername(training.getTrainer().getUsername())
+                .trainingTypeName(training.getTrainingType().getTrainingTypeName())
+                .trainingDate(training.getTrainingDate())
+                .trainingDuration(training.getTrainingDuration())
+                .build();
+    }
 }

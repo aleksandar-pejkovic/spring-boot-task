@@ -1,9 +1,11 @@
 package org.example.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -15,11 +17,15 @@ import java.util.Optional;
 
 import org.example.dto.credentials.CredentialsUpdateDTO;
 import org.example.dto.trainee.TraineeUpdateDTO;
+import org.example.exception.credentials.IdenticalPasswordException;
+import org.example.exception.credentials.IncorrectPasswordException;
+import org.example.exception.notfound.TraineeNotFoundException;
 import org.example.model.Trainee;
 import org.example.model.User;
 import org.example.repository.TraineeRepository;
 import org.example.utils.credentials.CredentialsGenerator;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -83,16 +89,25 @@ class TraineeServiceTest {
     @Test
     void getTraineeByUsername() {
         // Arrange
-        String username = "testUser";
         Trainee expectedTrainee = new Trainee();
-        when(traineeRepository.findByUserUsername(username)).thenReturn(Optional.of(expectedTrainee));
+        when(traineeRepository.findByUserUsername(anyString())).thenReturn(Optional.of(expectedTrainee));
 
         // Act
-        Trainee result = traineeService.getTraineeByUsername(username);
+        Trainee result = traineeService.getTraineeByUsername("username");
 
         // Assert
-        verify(traineeRepository, times(1)).findByUserUsername(username);
+        verify(traineeRepository, times(1)).findByUserUsername("username");
         assertEquals(expectedTrainee, result);
+    }
+
+    @Test
+    @DisplayName("getTraineeByUsername throws TraineeNotFoundException when Trainee is not found")
+    void getTraineeByUsernameThrowsTraineeNotFoundExceptionWhenTraineeNotFound() {
+        when(traineeRepository.findByUserUsername(anyString())).thenReturn(Optional.empty());
+
+        assertThrows(TraineeNotFoundException.class, () -> traineeService.getTraineeByUsername("username"));
+
+        verify(traineeRepository, times(1)).findByUserUsername("username");
     }
 
     @Test
@@ -113,6 +128,38 @@ class TraineeServiceTest {
         // Assert
         verify(traineeRepository, times(1)).save(trainee);
         assertEquals(credentialsUpdateDTO.getNewPassword(), result.getPassword());
+    }
+
+    @Test
+    @DisplayName("changePassword throws IncorrectPasswordException when old password is incorrect")
+    void changePasswordThrowsIncorrectPasswordExceptionWhenOldPasswordIsWrong() {
+        CredentialsUpdateDTO credentialsUpdateDTO = CredentialsUpdateDTO.builder()
+                .username("testUser")
+                .oldPassword("wrongOldPassword")
+                .newPassword("newPassword")
+                .build();
+
+        when(traineeRepository.findByUserUsername(any())).thenReturn(Optional.ofNullable(trainee));
+
+        assertThrows(IncorrectPasswordException.class, () -> traineeService.changePassword(credentialsUpdateDTO));
+
+        verify(traineeRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("changePassword throws IdenticalPasswordException when new password is the same as old password")
+    void changePasswordThrowsIdenticalPasswordExceptionWhenNewPasswordEqualsOldPassword() {
+        CredentialsUpdateDTO credentialsUpdateDTO = CredentialsUpdateDTO.builder()
+                .username("testUser")
+                .oldPassword("0123456789")
+                .newPassword("0123456789")
+                .build();
+
+        when(traineeRepository.findByUserUsername(any())).thenReturn(Optional.ofNullable(trainee));
+
+        assertThrows(IdenticalPasswordException.class, () -> traineeService.changePassword(credentialsUpdateDTO));
+
+        verify(traineeRepository, never()).save(any());
     }
 
     @Test
@@ -149,6 +196,17 @@ class TraineeServiceTest {
         // Assert
         verify(traineeRepository, times(1)).save(trainee);
         assertTrue(result);
+    }
+
+    @Test
+    @DisplayName("toggleTraineeActivation throws TraineeNotFoundException when Trainee is not found")
+    void toggleTraineeActivationThrowsTraineeNotFoundExceptionWhenUserNotFound() {
+        when(traineeRepository.findByUserUsername(anyString())).thenReturn(Optional.empty());
+
+        assertThrows(TraineeNotFoundException.class,
+                () -> traineeService.toggleTraineeActivation("Bad.Username", true));
+
+        verify(traineeRepository, never()).save(any());
     }
 
     @Test
