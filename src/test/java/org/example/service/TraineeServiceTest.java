@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -66,7 +65,7 @@ class TraineeServiceTest {
                 traineeUnderTest.getAddress()
         );
 
-        verify(traineeRepository, times(1)).save(any());
+        verify(traineeRepository).save(any());
         assertEquals("John.Doe", result.getUsername());
         assertEquals("0123456789", result.getPassword());
     }
@@ -78,7 +77,7 @@ class TraineeServiceTest {
 
         Trainee result = traineeService.getTraineeByUsername("John.Doe");
 
-        verify(traineeRepository, times(1)).findByUserUsername("John.Doe");
+        verify(traineeRepository).findByUserUsername("John.Doe");
         assertEquals(traineeUnderTest, result);
     }
 
@@ -87,9 +86,9 @@ class TraineeServiceTest {
     void shouldThrowTraineeNotFoundExceptionForInvalidUsernameWhenGetTraineeByUsername() {
         when(traineeRepository.findByUserUsername(anyString())).thenReturn(Optional.empty());
 
-        assertThrows(TraineeNotFoundException.class, () -> traineeService.getTraineeByUsername("John.Doe"));
+        assertThrows(TraineeNotFoundException.class, () -> traineeService.getTraineeByUsername("Bad.Username"));
 
-        verify(traineeRepository, times(1)).findByUserUsername("John.Doe");
+        verify(traineeRepository).findByUserUsername("Bad.Username");
     }
 
     @Test
@@ -103,7 +102,7 @@ class TraineeServiceTest {
 
         Trainee result = traineeService.changePassword(credentialsUpdateDTO);
 
-        verify(traineeRepository, times(1)).save(traineeUnderTest);
+        verify(traineeRepository).save(traineeUnderTest);
         assertEquals(credentialsUpdateDTO.getNewPassword(), result.getPassword());
     }
 
@@ -142,7 +141,7 @@ class TraineeServiceTest {
         TraineeUpdateDTO traineeUpdateDTO = createTraineeUpdateDTO();
         Trainee result = traineeService.updateTrainee(traineeUpdateDTO);
 
-        verify(traineeRepository, times(1)).save(traineeUnderTest);
+        verify(traineeRepository).save(traineeUnderTest);
         assertEquals(traineeUnderTest, result);
     }
 
@@ -154,7 +153,7 @@ class TraineeServiceTest {
 
         boolean result = traineeService.toggleTraineeActivation(traineeUnderTest.getUsername(), traineeUnderTest.getUser().isActive());
 
-        verify(traineeRepository, times(1)).save(traineeUnderTest);
+        verify(traineeRepository).save(traineeUnderTest);
         assertTrue(result);
     }
 
@@ -172,12 +171,12 @@ class TraineeServiceTest {
     @Test
     @DisplayName("Should return true when deleteTrainee")
     void shouldReturnTrueWhenDeleteTrainee() {
-        String username = "testUser";
-        when(traineeRepository.deleteByUserUsername(username)).thenReturn(true);
+        String username = traineeUnderTest.getUsername();
+        when(traineeRepository.deleteByUserUsername(anyString())).thenReturn(true);
 
         boolean result = traineeService.deleteTrainee(username);
 
-        verify(traineeRepository, times(1)).deleteByUserUsername(username);
+        verify(traineeRepository).deleteByUserUsername(username);
         assertTrue(result);
     }
 
@@ -189,14 +188,14 @@ class TraineeServiceTest {
 
         List<Trainee> result = traineeService.getAllTrainees();
 
-        verify(traineeRepository, times(1)).findAll();
+        verify(traineeRepository).findAll();
         assertEquals(expectedTrainees, result);
     }
 
     private CredentialsUpdateDTO createCredentialsUpdateDTO(String oldPassword,
                                                             String newPassword) {
         return CredentialsUpdateDTO.builder()
-                .username("John.Doe")
+                .username(traineeUnderTest.getUsername())
                 .oldPassword(oldPassword)
                 .newPassword(newPassword)
                 .build();

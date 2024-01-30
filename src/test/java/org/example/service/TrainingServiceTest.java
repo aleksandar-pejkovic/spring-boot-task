@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -74,7 +73,7 @@ class TrainingServiceTest {
         boolean result = trainingService.createTraining(trainingCreateDTO);
 
         ArgumentCaptor<Training> trainingCaptor = ArgumentCaptor.forClass(Training.class);
-        verify(trainingRepository, times(1)).save(trainingCaptor.capture());
+        verify(trainingRepository).save(trainingCaptor.capture());
         assertTrue(result);
         assertEquals(trainingUnderTest.getTrainingDuration(), trainingCaptor.getValue().getTrainingDuration());
     }
@@ -88,7 +87,7 @@ class TrainingServiceTest {
 
         assertThrows(TraineeNotFoundException.class, () -> trainingService.createTraining(trainingCreateDTO));
 
-        verify(traineeRepository, times(1)).findByUserUsername(trainingCreateDTO.getTraineeUsername());
+        verify(traineeRepository).findByUserUsername(trainingCreateDTO.getTraineeUsername());
     }
 
     @Test
@@ -100,7 +99,7 @@ class TrainingServiceTest {
 
         assertThrows(TrainerNotFoundException.class, () -> trainingService.createTraining(trainingCreateDTO));
 
-        verify(trainerRepository, times(1)).findByUserUsername(trainingCreateDTO.getTrainerUsername());
+        verify(trainerRepository).findByUserUsername(trainingCreateDTO.getTrainerUsername());
     }
 
     @Test
@@ -113,7 +112,7 @@ class TrainingServiceTest {
 
         assertThrows(TrainingTypeNotFoundException.class, () -> trainingService.createTraining(trainingCreateDTO));
 
-        verify(trainingTypeRepository, times(1)).findByTrainingTypeName(trainingCreateDTO.getTrainingTypeName());
+        verify(trainingTypeRepository).findByTrainingTypeName(trainingCreateDTO.getTrainingTypeName());
     }
 
     @Test
@@ -123,7 +122,7 @@ class TrainingServiceTest {
 
         Training result = trainingService.getTrainingById(1L);
 
-        verify(trainingRepository, times(1)).findById(1L);
+        verify(trainingRepository).findById(1L);
         assertEquals(trainingUnderTest, result);
     }
 
@@ -134,7 +133,7 @@ class TrainingServiceTest {
 
         Training result = trainingService.updateTraining(trainingUnderTest);
 
-        verify(trainingRepository, times(1)).save(trainingUnderTest);
+        verify(trainingRepository).save(trainingUnderTest);
         assertEquals(trainingUnderTest, result);
     }
 
@@ -145,7 +144,7 @@ class TrainingServiceTest {
 
         boolean result = trainingService.deleteTraining(trainingUnderTest);
 
-        verify(trainingRepository, times(1)).delete(trainingUnderTest);
+        verify(trainingRepository).delete(trainingUnderTest);
         assertTrue(result);
     }
 
@@ -163,7 +162,7 @@ class TrainingServiceTest {
                 trainingUnderTest.getTrainingType().getTrainingTypeName().name()
         );
 
-        verify(trainingRepository, times(1)).findByTraineeUserUsernameAndTrainingDateBetweenAndTrainerUserUsernameAndTrainingTypeTrainingTypeName(anyString(), any(), any(), anyString(), anyString());
+        verify(trainingRepository).findByTraineeUserUsernameAndTrainingDateBetweenAndTrainerUserUsernameAndTrainingTypeTrainingTypeName(anyString(), any(), any(), anyString(), anyString());
         assertEquals(expectedTrainingList, result);
     }
 
@@ -180,7 +179,7 @@ class TrainingServiceTest {
                 trainingUnderTest.getTrainee().getUsername()
         );
 
-        verify(trainingRepository, times(1)).findByTrainerUserUsernameAndTrainingDateBetweenAndTraineeUserUsername(anyString(), any(), any(), anyString());
+        verify(trainingRepository).findByTrainerUserUsernameAndTrainingDateBetweenAndTraineeUserUsername(anyString(), any(), any(), anyString());
         assertEquals(expectedTrainingList, result);
     }
 
@@ -192,7 +191,7 @@ class TrainingServiceTest {
 
         List<Training> result = trainingService.getAllTrainings();
 
-        verify(trainingRepository, times(1)).findAll();
+        verify(trainingRepository).findAll();
         assertEquals(expectedTrainingList, result);
     }
 

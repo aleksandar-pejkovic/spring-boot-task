@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -79,7 +78,7 @@ class TrainerServiceTest {
         Trainer result = trainerService.createTrainer(trainerUnderTest.getUser().getFirstName(),
                 trainerUnderTest.getUser().getLastName(), trainerUnderTest.getSpecialization().getTrainingTypeName());
 
-        verify(trainerRepository, times(1)).save(any());
+        verify(trainerRepository).save(any());
         assertEquals("Joe.Johnson", result.getUsername());
         assertEquals("0123456789", result.getPassword());
     }
@@ -91,7 +90,7 @@ class TrainerServiceTest {
 
         Trainer result = trainerService.getTrainerByUsername("Joe.Johnson");
 
-        verify(trainerRepository, times(1)).findByUserUsername(anyString());
+        verify(trainerRepository).findByUserUsername(anyString());
         assertEquals(trainerUnderTest, result);
     }
 
@@ -103,7 +102,7 @@ class TrainerServiceTest {
         assertThrows(TrainerNotFoundException.class,
                 () -> trainerService.getTrainerByUsername("Joe.Johnson"));
 
-        verify(trainerRepository, times(1)).findByUserUsername("Joe.Johnson");
+        verify(trainerRepository).findByUserUsername("Joe.Johnson");
     }
 
     @Test
@@ -117,7 +116,7 @@ class TrainerServiceTest {
 
         Trainer result = trainerService.changePassword(credentialsUpdateDTO);
 
-        verify(trainerRepository, times(1)).save(trainerUnderTest);
+        verify(trainerRepository).save(trainerUnderTest);
         assertEquals(credentialsUpdateDTO.getNewPassword(), result.getPassword());
     }
 
@@ -162,7 +161,7 @@ class TrainerServiceTest {
 
         trainerService.updateTrainer(trainerUpdateDTO);
 
-        verify(trainerRepository, times(1)).save(trainerUnderTest);
+        verify(trainerRepository).save(trainerUnderTest);
     }
 
     @Test
@@ -186,7 +185,7 @@ class TrainerServiceTest {
 
         boolean result = trainerService.toggleTrainerActivation(trainerUnderTest.getUsername(), trainerUnderTest.getUser().isActive());
 
-        verify(trainerRepository, times(1)).save(trainerUnderTest);
+        verify(trainerRepository).save(trainerUnderTest);
         assertTrue(result);
     }
 
@@ -204,25 +203,25 @@ class TrainerServiceTest {
     @Test
     @DisplayName("Should return true when deleteTrainer")
     void shouldReturnTrueWhenDeleteTrainer() {
-        String username = "testUser";
+        String username = trainerUnderTest.getUsername();
         when(trainerRepository.deleteByUserUsername(username)).thenReturn(true);
 
         boolean result = trainerService.deleteTrainer(username);
 
-        verify(trainerRepository, times(1)).deleteByUserUsername(username);
+        verify(trainerRepository).deleteByUserUsername(username);
         assertTrue(result);
     }
 
     @Test
     @DisplayName("Should return list of trainers when getNotAssignedTrainerList")
     void shouldReturnTrainerListWhenGetNotAssignedTrainerList() {
-        String traineeUsername = "John.Doe";
+        String traineeUsername = trainerUnderTest.getUsername();
         List<Trainer> expectedTrainers = Collections.singletonList(new Trainer());
         when(trainerRepository.findByTraineeListUserUsernameAndUserIsActiveIsTrueOrTraineeListIsNull(traineeUsername)).thenReturn(expectedTrainers);
 
         List<Trainer> result = trainerService.getNotAssignedTrainerList(traineeUsername);
 
-        verify(trainerRepository, times(1)).findByTraineeListUserUsernameAndUserIsActiveIsTrueOrTraineeListIsNull(traineeUsername);
+        verify(trainerRepository).findByTraineeListUserUsernameAndUserIsActiveIsTrueOrTraineeListIsNull(traineeUsername);
         assertEquals(expectedTrainers, result);
     }
 
@@ -234,14 +233,14 @@ class TrainerServiceTest {
 
         List<Trainer> result = trainerService.getAllTrainers();
 
-        verify(trainerRepository, times(1)).findAll();
+        verify(trainerRepository).findAll();
         assertEquals(expectedTrainers, result);
     }
 
     private CredentialsUpdateDTO createCredentialsUpdateDTO(String oldPassword,
                                                             String newPassword) {
         return CredentialsUpdateDTO.builder()
-                .username("Joe.Johnson")
+                .username(trainerUnderTest.getUsername())
                 .oldPassword(oldPassword)
                 .newPassword(newPassword)
                 .build();

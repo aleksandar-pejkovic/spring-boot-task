@@ -59,7 +59,8 @@ public class TraineeControllerTest {
                         .param("lastName", "Doe"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.username").value("John.Doe"));
+                .andExpect(jsonPath("$.username").value("John.Doe"))
+                .andExpect(jsonPath("$.password").value("0123456789"));
     }
 
     @Test
