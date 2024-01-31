@@ -47,6 +47,12 @@ public class TrainerDummyDataFactory {
         return getTrainers();
     }
 
+    public static Trainer getSimpleTrainerWithUser() {
+        return Trainer.builder()
+                .user(UserDummyDataFactory.getUserPeterPeterson())
+                .build();
+    }
+
     private static ArrayList<Trainer> getTrainers() {
         Trainer trainer1 = getTrainerJoeJohnsonForAerobic();
         Trainer trainer2 = getTrainerPeterPetersonForStrength();

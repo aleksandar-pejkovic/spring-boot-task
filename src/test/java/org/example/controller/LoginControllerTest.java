@@ -38,6 +38,7 @@ class LoginControllerTest {
     @MockBean
     private AuthenticationManager authenticationManager;
 
+    @Autowired
     public LoginControllerTest(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
     }

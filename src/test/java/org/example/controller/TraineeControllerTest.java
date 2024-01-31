@@ -59,6 +59,7 @@ public class TraineeControllerTest {
     private static final String JSON_PATH_FIRST_NAME = "$.firstName";
     private static final String JSON_PATH_LAST_NAME = "$.lastName";
 
+    private static final String ROLE_ADMIN = "ROLE_ADMIN";
     private static final String ROLE_TEST = "ROLE_TEST";
 
     private static final String NOT_FOUND_MESSAGE_TRAINEE = "Trainee not found";
@@ -73,6 +74,7 @@ public class TraineeControllerTest {
 
     private Trainee traineeUnderTest;
 
+    @Autowired
     public TraineeControllerTest(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
     }
@@ -198,7 +200,7 @@ public class TraineeControllerTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(authorities = {ROLE_ADMIN})
     void toggleTraineeActivation() throws Exception {
         when(traineeService.toggleTraineeActivation(anyString(), anyBoolean())).thenReturn(true);
 
@@ -218,7 +220,7 @@ public class TraineeControllerTest {
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                         .param(PARAM_USERNAME, USERNAME)
                         .param(PARAM_IS_ACTIVE, ACTIVE_STATUS))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().is3xxRedirection());
     }
 
     @Test

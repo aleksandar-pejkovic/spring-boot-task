@@ -46,4 +46,10 @@ public class TraineeDummyDataFactory {
                 .trainerList(TrainerDummyDataFactory.getTrainersForTraineeUnderTest())
                 .build();
     }
+
+    public static Trainee getSimpleTraineeWithUser() {
+        return Trainee.builder()
+                .user(UserDummyDataFactory.getUserJohnDoe())
+                .build();
+    }
 }

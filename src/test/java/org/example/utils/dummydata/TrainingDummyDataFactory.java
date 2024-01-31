@@ -4,8 +4,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import org.example.model.Trainee;
-import org.example.model.Trainer;
 import org.example.model.Training;
 
 public class TrainingDummyDataFactory {
@@ -40,16 +38,16 @@ public class TrainingDummyDataFactory {
 
     private static ArrayList<Training> getTrainings() {
         Training training1 = Training.builder()
-                .trainee(Trainee.builder().build())
-                .trainer(Trainer.builder().build())
+                .trainee(TraineeDummyDataFactory.getSimpleTraineeWithUser())
+                .trainer(TrainerDummyDataFactory.getSimpleTrainerWithUser())
                 .trainingType(TrainingTypeDummyDataFactory.getTrainingTypeAerobic())
                 .trainingDate(DEFAULT_TRAINING_DATE)
                 .trainingDuration(DEFAULT_TRAINING_DURATION)
                 .build();
 
         Training training2 = Training.builder()
-                .trainee(Trainee.builder().build())
-                .trainer(Trainer.builder().build())
+                .trainee(TraineeDummyDataFactory.getSimpleTraineeWithUser())
+                .trainer(TrainerDummyDataFactory.getSimpleTrainerWithUser())
                 .trainingType(TrainingTypeDummyDataFactory.getTrainingTypeStrength())
                 .trainingDate(DEFAULT_TRAINING_DATE)
                 .trainingDuration(DEFAULT_TRAINING_DURATION)

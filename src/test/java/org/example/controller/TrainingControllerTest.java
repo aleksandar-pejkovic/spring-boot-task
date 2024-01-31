@@ -39,15 +39,10 @@ class TrainingControllerTest {
     private static final String PARAM_USERNAME = "username";
     private static final String PARAM_TRAINER_NAME = "trainerName";
     private static final String PARAM_TRAINING_TYPE = "trainingType";
-    private static final String PARAM_TRAINEE_USERNAME = "traineeUsername";
-    private static final String PARAM_TRAINER_USERNAME = "trainerUsername";
-    private static final String PARAM_TRAINING_TYPE_NAME = "trainingTypeName";
-    private static final String PARAM_TRAINING_DATE = "trainingDate";
-    private static final String PARAM_TRAINING_DURATION = "trainingDuration";
 
     private static final String TRAINEE_USERNAME = "John.Doe";
     private static final String TRAINER_USERNAME = "Joe.Johnson";
-    private static final Date TRAINING_DATE = new Date("2024-01-07");
+    private static final Date TRAINING_DATE = new Date();
     private static final int TRAINING_DURATION = 30;
 
     private final ObjectMapper objectMapper;
@@ -58,6 +53,7 @@ class TrainingControllerTest {
     @MockBean
     private TrainingService trainingService;
 
+    @Autowired
     public TrainingControllerTest(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
     }
