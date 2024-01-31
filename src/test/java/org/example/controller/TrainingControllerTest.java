@@ -6,14 +6,16 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Date;
 import java.util.List;
 
-import org.example.dto.trainingType.TrainingTypeDTO;
+import org.example.dto.training.TrainingCreateDTO;
 import org.example.enums.TrainingTypeName;
 import org.example.model.Training;
+import org.example.model.TrainingType;
 import org.example.service.TrainingService;
+import org.example.utils.dummydata.TrainingDummyDataFactory;
+import org.example.utils.dummydata.TrainingTypeDummyDataFactory;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -23,7 +25,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.jayway.jsonpath.JsonPath;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -45,8 +47,10 @@ class TrainingControllerTest {
 
     private static final String TRAINEE_USERNAME = "John.Doe";
     private static final String TRAINER_USERNAME = "Joe.Johnson";
-    private static final String TRAINING_DATE = "2024-01-07";
+    private static final Date TRAINING_DATE = new Date("2024-01-07");
     private static final int TRAINING_DURATION = 30;
+
+    private final ObjectMapper objectMapper;
 
     @Autowired
     private MockMvc mockMvc;
@@ -54,10 +58,14 @@ class TrainingControllerTest {
     @MockBean
     private TrainingService trainingService;
 
+    public TrainingControllerTest(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
+
     @Test
     @WithMockUser
     void getTraineeTrainingsList() throws Exception {
-        List<Training> trainings = new ArrayList<>();
+        List<Training> trainings = TrainingDummyDataFactory.getTrainingsForTrainee();
 
         when(trainingService.getTraineeTrainingList(any(), any(), any(), any(), any()))
                 .thenReturn(trainings);
@@ -72,7 +80,8 @@ class TrainingControllerTest {
     @Test
     @WithMockUser
     void getTrainerTrainingsList() throws Exception {
-        List<Training> trainings = new ArrayList<>();
+        List<Training> trainings = TrainingDummyDataFactory.getTrainingsForTrainer();
+
         when(trainingService.getTrainerTrainingList(any(), any(), any(), any()))
                 .thenReturn(trainings);
 
@@ -84,45 +93,45 @@ class TrainingControllerTest {
     @Test
     @WithMockUser
     void addTraining() throws Exception {
-        String trainingCreateDTOJson = JsonPath.parse(new HashMap<String, Object>() {{
-            put(PARAM_TRAINEE_USERNAME, TRAINEE_USERNAME);
-            put(PARAM_TRAINER_USERNAME, TRAINER_USERNAME);
-            put(PARAM_TRAINING_TYPE_NAME, TrainingTypeName.AEROBIC.name());
-            put(PARAM_TRAINING_DATE, TRAINING_DATE);
-            put(PARAM_TRAINING_DURATION, TRAINING_DURATION);
-        }}).jsonString();
+        TrainingCreateDTO trainingCreateDTO = TrainingCreateDTO.builder()
+                .traineeUsername(TRAINEE_USERNAME)
+                .trainerUsername(TRAINER_USERNAME)
+                .trainingTypeName(TrainingTypeName.AEROBIC)
+                .trainingDate(TRAINING_DATE)
+                .trainingDuration(TRAINING_DURATION)
+                .build();
 
         when(trainingService.createTraining(any())).thenReturn(true);
 
         mockMvc.perform(post(URL_TEMPLATE)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(trainingCreateDTOJson))
+                        .content(objectMapper.writeValueAsString(trainingCreateDTO)))
                 .andExpect(status().isOk());
     }
 
     @Test
     @WithMockUser
     void addTrainingReturnsBadRequestWhenCreateTrainingUnsuccessful() throws Exception {
-        String trainingCreateDTOJson = JsonPath.parse(new HashMap<String, Object>() {{
-            put(PARAM_TRAINEE_USERNAME, TRAINEE_USERNAME);
-            put(PARAM_TRAINER_USERNAME, TRAINER_USERNAME);
-            put(PARAM_TRAINING_TYPE_NAME, TrainingTypeName.AEROBIC.name());
-            put(PARAM_TRAINING_DATE, TRAINING_DATE);
-            put(PARAM_TRAINING_DURATION, TRAINING_DURATION);
-        }}).jsonString();
+        TrainingCreateDTO trainingCreateDTO = TrainingCreateDTO.builder()
+                .traineeUsername(TRAINEE_USERNAME)
+                .trainerUsername(TRAINER_USERNAME)
+                .trainingTypeName(TrainingTypeName.AEROBIC)
+                .trainingDate(TRAINING_DATE)
+                .trainingDuration(TRAINING_DURATION)
+                .build();
 
         when(trainingService.createTraining(any())).thenReturn(false);
 
         mockMvc.perform(post(URL_TEMPLATE)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(trainingCreateDTOJson))
+                        .content(objectMapper.writeValueAsString(trainingCreateDTO)))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     @WithMockUser
     void getAllTrainingTypes() throws Exception {
-        List<TrainingTypeDTO> trainingTypes = new ArrayList<>();
+        List<TrainingType> trainingTypes = TrainingTypeDummyDataFactory.getTrainingTypes();
         when(trainingService.finaAllTrainingTypes()).thenReturn(trainingTypes);
 
         mockMvc.perform(get(URL_TEMPLATE + URL_TRAINING_TYPES))

@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Optional;
 
 import org.example.dto.training.TrainingCreateDTO;
-import org.example.dto.trainingType.TrainingTypeDTO;
 import org.example.exception.date.IllegalDateArgumentException;
 import org.example.exception.notfound.TraineeNotFoundException;
 import org.example.exception.notfound.TrainerNotFoundException;
@@ -20,7 +19,6 @@ import org.example.repository.TraineeRepository;
 import org.example.repository.TrainerRepository;
 import org.example.repository.TrainingRepository;
 import org.example.repository.TrainingTypeRepository;
-import org.example.utils.converter.TrainingTypeConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -133,10 +131,10 @@ public class TrainingService {
     }
 
     @Transactional(readOnly = true)
-    public List<TrainingTypeDTO> finaAllTrainingTypes() {
+    public List<TrainingType> finaAllTrainingTypes() {
         List<TrainingType> trainingTypes = trainingTypeRepository.findAll();
         log.info("Retrieved all training types successfully");
-        return TrainingTypeConverter.convertToDtoList(trainingTypes);
+        return trainingTypes;
     }
 
     private void validateDates(Date periodFrom, Date periodTo) {

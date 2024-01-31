@@ -8,8 +8,10 @@ import org.example.dto.training.TrainingDTO;
 import org.example.dto.trainingType.TrainingTypeDTO;
 import org.example.enums.TrainingTypeName;
 import org.example.model.Training;
+import org.example.model.TrainingType;
 import org.example.service.TrainingService;
 import org.example.utils.converter.TrainingConverter;
+import org.example.utils.converter.TrainingTypeConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -80,6 +82,7 @@ public class TrainingController {
     @GetMapping("/training-types")
     public List<TrainingTypeDTO> getAllTrainingTypes() {
         log.info("Endpoint '/api/trainings/training-types' was called to get all training types");
-        return trainingService.finaAllTrainingTypes();
+        List<TrainingType> trainingTypes = trainingService.finaAllTrainingTypes();
+        return TrainingTypeConverter.convertToDtoList(trainingTypes);
     }
 }

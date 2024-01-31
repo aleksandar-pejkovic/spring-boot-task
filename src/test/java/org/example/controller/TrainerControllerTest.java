@@ -15,10 +15,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
+import org.example.dto.credentials.CredentialsUpdateDTO;
+import org.example.dto.trainer.TrainerUpdateDTO;
 import org.example.enums.TrainingTypeName;
 import org.example.exception.notfound.TrainerNotFoundException;
 import org.example.model.Trainer;
@@ -35,7 +35,7 @@ import org.springframework.security.test.context.support.WithAnonymousUser;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.jayway.jsonpath.JsonPath;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -49,19 +49,17 @@ class TrainerControllerTest {
     private static final String URL_UNASSIGNED = "/unassigned";
 
     private static final String USERNAME = "Joe.Johnson";
-    private static final String PASSWORD = "01234567891";
+    private static final String PASSWORD = "0123456789";
     private static final String NEW_PASSWORD = "newPassword";
     private static final String FIRST_NAME = "Joe";
-    private static final String LAST_NAME = "Johnson1";
-    private static final String ACTIVE_STATUS = "true1";
+    private static final String LAST_NAME = "Johnson";
+    private static final String ACTIVE_STATUS = "true";
     private static final String TRAINEE_USERNAME = "John.Doe";
 
     private static final String PARAM_USERNAME = "username";
     private static final String PARAM_TRAINEE_USERNAME = "traineeUsername";
     private static final String PARAM_FIRST_NAME = "firstName";
     private static final String PARAM_LAST_NAME = "lastName";
-    private static final String PARAM_OLD_PASSWORD = "oldPassword";
-    private static final String PARAM_NEW_PASSWORD = "newPassword";
     private static final String PARAM_IS_ACTIVE = "isActive";
     private static final String PARAM_SPECIALIZATION = "specialization";
 
@@ -74,6 +72,8 @@ class TrainerControllerTest {
 
     private static final String NOT_FOUND_MESSAGE_TRAINER = "Trainer not found";
 
+    private final ObjectMapper objectMapper;
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -81,6 +81,10 @@ class TrainerControllerTest {
     private TrainerService trainerService;
 
     private Trainer trainerUnderTest;
+
+    public TrainerControllerTest(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
 
     @BeforeEach
     void setUp() {
@@ -105,34 +109,34 @@ class TrainerControllerTest {
     @Test
     @WithMockUser
     void changeLogin() throws Exception {
-        String credentialsUpdateDTOJson = JsonPath.parse(new HashMap<String, Object>() {{
-            put(PARAM_USERNAME, USERNAME);
-            put(PARAM_OLD_PASSWORD, PASSWORD);
-            put(PARAM_NEW_PASSWORD, NEW_PASSWORD);
-        }}).jsonString();
+        CredentialsUpdateDTO credentialsUpdateDTO = CredentialsUpdateDTO.builder()
+                .username(USERNAME)
+                .oldPassword(PASSWORD)
+                .newPassword(NEW_PASSWORD)
+                .build();
 
         when(trainerService.changePassword(any())).thenReturn(trainerUnderTest);
 
         mockMvc.perform(put(URL_TEMPLATE + URL_CHANGE_LOGIN)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(credentialsUpdateDTOJson))
+                        .content(objectMapper.writeValueAsString(credentialsUpdateDTO)))
                 .andExpect(status().isOk());
     }
 
     @Test
     @WithMockUser
     void changeLoginReturnBadRequestWhenTrainerIsNull() throws Exception {
-        String credentialsUpdateDTOJson = JsonPath.parse(new HashMap<String, Object>() {{
-            put(PARAM_USERNAME, USERNAME);
-            put(PARAM_OLD_PASSWORD, PASSWORD);
-            put(PARAM_NEW_PASSWORD, NEW_PASSWORD);
-        }}).jsonString();
+        CredentialsUpdateDTO credentialsUpdateDTO = CredentialsUpdateDTO.builder()
+                .username(USERNAME)
+                .oldPassword(PASSWORD)
+                .newPassword(NEW_PASSWORD)
+                .build();
 
         when(trainerService.changePassword(any())).thenReturn(null);
 
         mockMvc.perform(put(URL_TEMPLATE + URL_CHANGE_LOGIN)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(credentialsUpdateDTOJson))
+                        .content(objectMapper.writeValueAsString(credentialsUpdateDTO)))
                 .andExpect(status().isBadRequest());
     }
 
@@ -163,19 +167,19 @@ class TrainerControllerTest {
     @Test
     @WithMockUser
     void updateTrainerProfile() throws Exception {
-        when(trainerService.updateTrainer(any())).thenReturn(trainerUnderTest);
+        TrainerUpdateDTO trainerUpdateDTO = TrainerUpdateDTO.builder()
+                .username(USERNAME)
+                .firstName(FIRST_NAME)
+                .lastName(LAST_NAME)
+                .specialization(TrainingTypeName.AEROBIC)
+                .isActive(true)
+                .build();
 
-        String trainerUpdateDTOJson = JsonPath.parse(new HashMap<String, Object>() {{
-            put(PARAM_USERNAME, USERNAME);
-            put(PARAM_FIRST_NAME, FIRST_NAME);
-            put(PARAM_LAST_NAME, LAST_NAME);
-            put(PARAM_SPECIALIZATION, TrainingTypeName.AEROBIC.name());
-            put(PARAM_IS_ACTIVE, ACTIVE_STATUS);
-        }}).jsonString();
+        when(trainerService.updateTrainer(any())).thenReturn(trainerUnderTest);
 
         mockMvc.perform(put(URL_TEMPLATE)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(trainerUpdateDTOJson))
+                        .content(objectMapper.writeValueAsString(trainerUpdateDTO)))
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath(JSON_PATH_USERNAME).value(USERNAME))
                 .andExpect(jsonPath(JSON_PATH_FIRST_NAME).value(FIRST_NAME))
@@ -207,7 +211,7 @@ class TrainerControllerTest {
     @Test
     @WithMockUser
     void getNotAssignedOnTrainee() throws Exception {
-        List<Trainer> unassignedTrainers = new ArrayList<>();
+        List<Trainer> unassignedTrainers = TrainerDummyDataFactory.getUnassignedTrainers();
         when(trainerService.getNotAssignedTrainerList(any())).thenReturn(unassignedTrainers);
 
         mockMvc.perform(get(URL_TEMPLATE + URL_UNASSIGNED)
@@ -219,7 +223,7 @@ class TrainerControllerTest {
     @Test
     @WithMockUser
     void updateTraineeTrainerList() throws Exception {
-        List<Trainer> updatedTraineeTrainerList = new ArrayList<>();
+        List<Trainer> updatedTraineeTrainerList = TrainerDummyDataFactory.getUpdatedTrainerListForTrainee();
         when(trainerService.updateTraineeTrainerList(any(), any()))
                 .thenReturn(updatedTraineeTrainerList);
 

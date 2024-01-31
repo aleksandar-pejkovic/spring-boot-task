@@ -26,16 +26,7 @@ public class TrainerDummyDataFactory {
     }
 
     public static List<Trainer> getTrainersForTraineeUnderTest() {
-        Trainer trainer1 = Trainer.builder()
-                .specialization(TrainingTypeDummyDataFactory.getTrainingTypeAerobic())
-                .user(UserDummyDataFactory.getUserJoeJohnson())
-                .build();
-
-        Trainer trainer2 = Trainer.builder()
-                .specialization(TrainingTypeDummyDataFactory.getTrainingTypeStrength())
-                .user(UserDummyDataFactory.getUserPeterPeterson())
-                .build();
-        return new ArrayList<>(List.of(trainer1, trainer2));
+        return getTrainers();
     }
 
     public static Trainer getTrainerForTrainingUnderTest() {
@@ -44,6 +35,35 @@ public class TrainerDummyDataFactory {
                 .user(UserDummyDataFactory.getUserJoeJohnson())
                 .traineeList(TraineeDummyDataFactory.getTraineesForTrainerUnderTest())
                 .trainingList(TrainingDummyDataFactory.getTrainingsForTrainerUnderTest())
+                .build();
+    }
+
+    public static List<Trainer> getUnassignedTrainers() {
+        return getTrainers();
+    }
+
+
+    public static List<Trainer> getUpdatedTrainerListForTrainee() {
+        return getTrainers();
+    }
+
+    private static ArrayList<Trainer> getTrainers() {
+        Trainer trainer1 = getTrainerJoeJohnsonForAerobic();
+        Trainer trainer2 = getTrainerPeterPetersonForStrength();
+        return new ArrayList<>(List.of(trainer1, trainer2));
+    }
+
+    private static Trainer getTrainerJoeJohnsonForAerobic() {
+        return Trainer.builder()
+                .specialization(TrainingTypeDummyDataFactory.getTrainingTypeAerobic())
+                .user(UserDummyDataFactory.getUserJoeJohnson())
+                .build();
+    }
+
+    private static Trainer getTrainerPeterPetersonForStrength() {
+        return Trainer.builder()
+                .specialization(TrainingTypeDummyDataFactory.getTrainingTypeStrength())
+                .user(UserDummyDataFactory.getUserPeterPeterson())
                 .build();
     }
 }

@@ -20,6 +20,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 @SpringBootTest
 @AutoConfigureMockMvc
 class LoginControllerTest {
@@ -28,11 +30,17 @@ class LoginControllerTest {
     private static final String DEFAULT_USERNAME = "John.Doe";
     private static final String DEFAULT_PASSWORD = "0123456789";
 
+    private final ObjectMapper objectMapper;
+
     @Autowired
     private MockMvc mockMvc;
 
     @MockBean
     private AuthenticationManager authenticationManager;
+
+    public LoginControllerTest(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
 
     @Test
     void loginSuccess() throws Exception {
@@ -51,7 +59,7 @@ class LoginControllerTest {
 
         mockMvc.perform(post(URL_TEMPLATE)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"username\":\"John.Doe\",\"password\":\"0123456789\"}"))
+                        .content(objectMapper.writeValueAsString(credentialsDTO)))
                 .andExpect(status().isOk());
     }
 }

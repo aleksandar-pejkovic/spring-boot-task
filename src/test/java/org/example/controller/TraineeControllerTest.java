@@ -15,8 +15,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.util.HashMap;
-
+import org.example.dto.credentials.CredentialsUpdateDTO;
+import org.example.dto.trainee.TraineeUpdateDTO;
 import org.example.exception.notfound.TraineeNotFoundException;
 import org.example.model.Trainee;
 import org.example.service.TraineeService;
@@ -32,7 +32,7 @@ import org.springframework.security.test.context.support.WithAnonymousUser;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.jayway.jsonpath.JsonPath;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -52,8 +52,6 @@ public class TraineeControllerTest {
     private static final String PARAM_USERNAME = "username";
     private static final String PARAM_FIRST_NAME = "firstName";
     private static final String PARAM_LAST_NAME = "lastName";
-    private static final String PARAM_OLD_PASSWORD = "oldPassword";
-    private static final String PARAM_NEW_PASSWORD = "newPassword";
     private static final String PARAM_IS_ACTIVE = "isActive";
 
     private static final String JSON_PATH_USERNAME = "$.username";
@@ -65,6 +63,8 @@ public class TraineeControllerTest {
 
     private static final String NOT_FOUND_MESSAGE_TRAINEE = "Trainee not found";
 
+    private final ObjectMapper objectMapper;
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -72,6 +72,10 @@ public class TraineeControllerTest {
     private TraineeService traineeService;
 
     private Trainee traineeUnderTest;
+
+    public TraineeControllerTest(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
 
     @BeforeEach
     void setUp() {
@@ -95,34 +99,34 @@ public class TraineeControllerTest {
     @Test
     @WithMockUser
     void changeLogin() throws Exception {
-        String credentialsUpdateDTOJson = JsonPath.parse(new HashMap<String, Object>() {{
-            put(PARAM_USERNAME, USERNAME);
-            put(PARAM_OLD_PASSWORD, PASSWORD);
-            put(PARAM_NEW_PASSWORD, NEW_PASSWORD);
-        }}).jsonString();
+        CredentialsUpdateDTO credentialsUpdateDTO = CredentialsUpdateDTO.builder()
+                .username(USERNAME)
+                .oldPassword(PASSWORD)
+                .newPassword(NEW_PASSWORD)
+                .build();
 
         when(traineeService.changePassword(any())).thenReturn(traineeUnderTest);
 
         mockMvc.perform(put(URL_TEMPLATE + URL_CHANGE_LOGIN)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(credentialsUpdateDTOJson))
+                        .content(objectMapper.writeValueAsString(credentialsUpdateDTO)))
                 .andExpect(status().isOk());
     }
 
     @Test
     @WithMockUser
     void changeLoginReturnBadRequestWhenTraineeIsNull() throws Exception {
-        String credentialsUpdateDTOJson = JsonPath.parse(new HashMap<String, Object>() {{
-            put(PARAM_USERNAME, USERNAME);
-            put(PARAM_OLD_PASSWORD, PASSWORD);
-            put(PARAM_NEW_PASSWORD, NEW_PASSWORD);
-        }}).jsonString();
+        CredentialsUpdateDTO credentialsUpdateDTO = CredentialsUpdateDTO.builder()
+                .username(USERNAME)
+                .oldPassword(PASSWORD)
+                .newPassword(NEW_PASSWORD)
+                .build();
 
         when(traineeService.changePassword(any())).thenReturn(null);
 
         mockMvc.perform(put(URL_TEMPLATE + URL_CHANGE_LOGIN)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(credentialsUpdateDTOJson))
+                        .content(objectMapper.writeValueAsString(credentialsUpdateDTO)))
                 .andExpect(status().isBadRequest());
     }
 
@@ -153,17 +157,17 @@ public class TraineeControllerTest {
     @Test
     @WithMockUser
     void updateTraineeProfile() throws Exception {
-        String traineeUpdateDTOJson = JsonPath.parse(new HashMap<String, Object>() {{
-            put(PARAM_USERNAME, USERNAME);
-            put(PARAM_FIRST_NAME, FIRST_NAME);
-            put(PARAM_LAST_NAME, LAST_NAME);
-        }}).jsonString();
+        TraineeUpdateDTO traineeUpdateDTO = TraineeUpdateDTO.builder()
+                .username(USERNAME)
+                .firstName(FIRST_NAME)
+                .lastName(LAST_NAME)
+                .build();
 
         when(traineeService.updateTrainee(any())).thenReturn(traineeUnderTest);
 
         mockMvc.perform(put(URL_TEMPLATE)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(traineeUpdateDTOJson))
+                        .content(objectMapper.writeValueAsString(traineeUpdateDTO)))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath(JSON_PATH_USERNAME).value(USERNAME))

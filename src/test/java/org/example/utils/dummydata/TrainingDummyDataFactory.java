@@ -27,6 +27,18 @@ public class TrainingDummyDataFactory {
     }
 
     public static List<Training> getTrainingsForTrainerUnderTest() {
+        return getTrainings();
+    }
+
+    public static List<Training> getTrainingsForTrainee() {
+        return getTrainings();
+    }
+
+    public static List<Training> getTrainingsForTrainer() {
+        return getTrainings();
+    }
+
+    private static ArrayList<Training> getTrainings() {
         Training training1 = Training.builder()
                 .trainee(Trainee.builder().build())
                 .trainer(Trainer.builder().build())
