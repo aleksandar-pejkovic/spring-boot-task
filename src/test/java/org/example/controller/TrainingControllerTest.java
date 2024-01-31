@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import org.example.dto.trainingType.TrainingTypeDTO;
+import org.example.enums.TrainingTypeName;
 import org.example.model.Training;
 import org.example.service.TrainingService;
 import org.junit.jupiter.api.Test;
@@ -29,6 +30,23 @@ import com.jayway.jsonpath.JsonPath;
 class TrainingControllerTest {
 
     private static final String URL_TEMPLATE = "/api/trainings";
+    private static final String URL_TRAINEE = "/trainee";
+    private static final String URL_TRAINER = "/trainer";
+    private static final String URL_TRAINING_TYPES = "/training-types";
+
+    private static final String PARAM_USERNAME = "username";
+    private static final String PARAM_TRAINER_NAME = "trainerName";
+    private static final String PARAM_TRAINING_TYPE = "trainingType";
+    private static final String PARAM_TRAINEE_USERNAME = "traineeUsername";
+    private static final String PARAM_TRAINER_USERNAME = "trainerUsername";
+    private static final String PARAM_TRAINING_TYPE_NAME = "trainingTypeName";
+    private static final String PARAM_TRAINING_DATE = "trainingDate";
+    private static final String PARAM_TRAINING_DURATION = "trainingDuration";
+
+    private static final String TRAINEE_USERNAME = "John.Doe";
+    private static final String TRAINER_USERNAME = "Joe.Johnson";
+    private static final String TRAINING_DATE = "2024-01-07";
+    private static final int TRAINING_DURATION = 30;
 
     @Autowired
     private MockMvc mockMvc;
@@ -44,10 +62,10 @@ class TrainingControllerTest {
         when(trainingService.getTraineeTrainingList(any(), any(), any(), any(), any()))
                 .thenReturn(trainings);
 
-        mockMvc.perform(get(URL_TEMPLATE + "/trainee")
-                        .param("username", "John.Doe")
-                        .param("trainerName", "Joe.Johnson")
-                        .param("trainingType", "AEROBIC"))
+        mockMvc.perform(get(URL_TEMPLATE + URL_TRAINEE)
+                        .param(PARAM_USERNAME, TRAINEE_USERNAME)
+                        .param(PARAM_TRAINER_NAME, TRAINER_USERNAME)
+                        .param(PARAM_TRAINING_TYPE, TrainingTypeName.AEROBIC.name()))
                 .andExpect(status().isOk());
     }
 
@@ -58,8 +76,8 @@ class TrainingControllerTest {
         when(trainingService.getTrainerTrainingList(any(), any(), any(), any()))
                 .thenReturn(trainings);
 
-        mockMvc.perform(get(URL_TEMPLATE + "/trainer")
-                        .param("username", "Joe.Johnson"))
+        mockMvc.perform(get(URL_TEMPLATE + URL_TRAINER)
+                        .param(PARAM_USERNAME, TRAINER_USERNAME))
                 .andExpect(status().isOk());
     }
 
@@ -67,11 +85,11 @@ class TrainingControllerTest {
     @WithMockUser
     void addTraining() throws Exception {
         String trainingCreateDTOJson = JsonPath.parse(new HashMap<String, Object>() {{
-            put("traineeUsername", "John.Doe");
-            put("trainerUsername", "Joe.Johnson");
-            put("trainingTypeName", "AEROBIC");
-            put("trainingDate", "2024-01-07");
-            put("trainingDuration", 30);
+            put(PARAM_TRAINEE_USERNAME, TRAINEE_USERNAME);
+            put(PARAM_TRAINER_USERNAME, TRAINER_USERNAME);
+            put(PARAM_TRAINING_TYPE_NAME, TrainingTypeName.AEROBIC.name());
+            put(PARAM_TRAINING_DATE, TRAINING_DATE);
+            put(PARAM_TRAINING_DURATION, TRAINING_DURATION);
         }}).jsonString();
 
         when(trainingService.createTraining(any())).thenReturn(true);
@@ -86,11 +104,11 @@ class TrainingControllerTest {
     @WithMockUser
     void addTrainingReturnsBadRequestWhenCreateTrainingUnsuccessful() throws Exception {
         String trainingCreateDTOJson = JsonPath.parse(new HashMap<String, Object>() {{
-            put("traineeUsername", "John.Doe");
-            put("trainerUsername", "Joe.Johnson");
-            put("trainingTypeName", "AEROBIC");
-            put("trainingDate", "2024-01-07");
-            put("trainingDuration", 30);
+            put(PARAM_TRAINEE_USERNAME, TRAINEE_USERNAME);
+            put(PARAM_TRAINER_USERNAME, TRAINER_USERNAME);
+            put(PARAM_TRAINING_TYPE_NAME, TrainingTypeName.AEROBIC.name());
+            put(PARAM_TRAINING_DATE, TRAINING_DATE);
+            put(PARAM_TRAINING_DURATION, TRAINING_DURATION);
         }}).jsonString();
 
         when(trainingService.createTraining(any())).thenReturn(false);
@@ -107,7 +125,7 @@ class TrainingControllerTest {
         List<TrainingTypeDTO> trainingTypes = new ArrayList<>();
         when(trainingService.finaAllTrainingTypes()).thenReturn(trainingTypes);
 
-        mockMvc.perform(get(URL_TEMPLATE + "/training-types"))
+        mockMvc.perform(get(URL_TEMPLATE + URL_TRAINING_TYPES))
                 .andExpect(status().isOk());
     }
 }

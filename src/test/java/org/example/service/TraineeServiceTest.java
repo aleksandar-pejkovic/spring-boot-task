@@ -35,6 +35,13 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 @ContextConfiguration(classes = {TraineeService.class})
 class TraineeServiceTest {
 
+    private static final String USERNAME = "John.Doe";
+    private static final String PASSWORD = "0123456789";
+    private static final String BAD_USERNAME = "Bad.Username";
+    private static final String NEW_PASSWORD = "newPassword";
+    private static final String WRONG_OLD_PASSWORD = "wrongOldPassword";
+    private static final boolean IS_ACTIVE = true;
+
     @MockBean
     private TraineeRepository traineeRepository;
 
@@ -54,8 +61,8 @@ class TraineeServiceTest {
     @Test
     @DisplayName("Should return Trainee when createTrainee")
     void shouldReturnTraineeWhenCreateTrainee() {
-        when(credentialsGenerator.generateUsername(any())).thenReturn("John.Doe");
-        when(credentialsGenerator.generateRandomPassword()).thenReturn("0123456789");
+        when(credentialsGenerator.generateUsername(any())).thenReturn(USERNAME);
+        when(credentialsGenerator.generateRandomPassword()).thenReturn(PASSWORD);
         when(traineeRepository.save(any())).thenReturn(traineeUnderTest);
 
         Trainee result = traineeService.createTrainee(
@@ -66,8 +73,8 @@ class TraineeServiceTest {
         );
 
         verify(traineeRepository).save(any());
-        assertEquals("John.Doe", result.getUsername());
-        assertEquals("0123456789", result.getPassword());
+        assertEquals(USERNAME, result.getUsername());
+        assertEquals(PASSWORD, result.getPassword());
     }
 
     @Test
@@ -75,9 +82,9 @@ class TraineeServiceTest {
     void shouldReturnTraineeWhenGetTraineeByUsername() {
         when(traineeRepository.findByUserUsername(anyString())).thenReturn(Optional.of(traineeUnderTest));
 
-        Trainee result = traineeService.getTraineeByUsername("John.Doe");
+        Trainee result = traineeService.getTraineeByUsername(USERNAME);
 
-        verify(traineeRepository).findByUserUsername("John.Doe");
+        verify(traineeRepository).findByUserUsername(USERNAME);
         assertEquals(traineeUnderTest, result);
     }
 
@@ -86,16 +93,16 @@ class TraineeServiceTest {
     void shouldThrowTraineeNotFoundExceptionForInvalidUsernameWhenGetTraineeByUsername() {
         when(traineeRepository.findByUserUsername(anyString())).thenReturn(Optional.empty());
 
-        assertThrows(TraineeNotFoundException.class, () -> traineeService.getTraineeByUsername("Bad.Username"));
+        assertThrows(TraineeNotFoundException.class, () -> traineeService.getTraineeByUsername(BAD_USERNAME));
 
-        verify(traineeRepository).findByUserUsername("Bad.Username");
+        verify(traineeRepository).findByUserUsername(BAD_USERNAME);
     }
 
     @Test
     @DisplayName("Should return Trainee when changePassword")
     void shouldReturnTraineeWhenChangePassword() {
         CredentialsUpdateDTO credentialsUpdateDTO =
-                createCredentialsUpdateDTO("0123456789", "newPassword");
+                createCredentialsUpdateDTO(PASSWORD, NEW_PASSWORD);
 
         when(traineeRepository.findByUserUsername(any())).thenReturn(Optional.ofNullable(traineeUnderTest));
         when(traineeRepository.save(any())).thenReturn(traineeUnderTest);
@@ -110,7 +117,7 @@ class TraineeServiceTest {
     @DisplayName("Should throw IncorrectPasswordException for incorrect old password")
     void shouldThrowIncorrectPasswordExceptionWhenOldPasswordIsIncorrect() {
         CredentialsUpdateDTO credentialsUpdateDTO =
-                createCredentialsUpdateDTO("wrongOldPassword", "newPassword");
+                createCredentialsUpdateDTO(WRONG_OLD_PASSWORD, NEW_PASSWORD);
 
         when(traineeRepository.findByUserUsername(any())).thenReturn(Optional.ofNullable(traineeUnderTest));
 
@@ -123,7 +130,7 @@ class TraineeServiceTest {
     @DisplayName("Should throw IdenticalPasswordException when old password equals new password")
     void shouldThrowIdenticalPasswordExceptionWhenOldPasswordEqualsNewPassword() {
         CredentialsUpdateDTO credentialsUpdateDTO =
-                createCredentialsUpdateDTO("0123456789", "0123456789");
+                createCredentialsUpdateDTO(PASSWORD, PASSWORD);
 
         when(traineeRepository.findByUserUsername(any())).thenReturn(Optional.ofNullable(traineeUnderTest));
 
@@ -163,7 +170,7 @@ class TraineeServiceTest {
         when(traineeRepository.findByUserUsername(anyString())).thenReturn(Optional.empty());
 
         assertThrows(TraineeNotFoundException.class,
-                () -> traineeService.toggleTraineeActivation("Bad.Username", true));
+                () -> traineeService.toggleTraineeActivation(BAD_USERNAME, IS_ACTIVE));
 
         verify(traineeRepository, never()).save(any());
     }
@@ -172,7 +179,7 @@ class TraineeServiceTest {
     @DisplayName("Should return true when deleteTrainee")
     void shouldReturnTrueWhenDeleteTrainee() {
         String username = traineeUnderTest.getUsername();
-        when(traineeRepository.deleteByUserUsername(anyString())).thenReturn(true);
+        when(traineeRepository.deleteByUserUsername(anyString())).thenReturn(IS_ACTIVE);
 
         boolean result = traineeService.deleteTrainee(username);
 

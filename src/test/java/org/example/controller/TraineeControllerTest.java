@@ -39,6 +39,31 @@ import com.jayway.jsonpath.JsonPath;
 public class TraineeControllerTest {
 
     private static final String URL_TEMPLATE = "/api/trainees";
+    private static final String URL_CHANGE_LOGIN = "/change-login";
+    private static final String URL_USERNAME = "/{username}";
+
+    private static final String USERNAME = "John.Doe";
+    private static final String PASSWORD = "0123456789";
+    private static final String NEW_PASSWORD = "newPassword";
+    private static final String FIRST_NAME = "John";
+    private static final String LAST_NAME = "Doe";
+    private static final String ACTIVE_STATUS = "true";
+
+    private static final String PARAM_USERNAME = "username";
+    private static final String PARAM_FIRST_NAME = "firstName";
+    private static final String PARAM_LAST_NAME = "lastName";
+    private static final String PARAM_OLD_PASSWORD = "oldPassword";
+    private static final String PARAM_NEW_PASSWORD = "newPassword";
+    private static final String PARAM_IS_ACTIVE = "isActive";
+
+    private static final String JSON_PATH_USERNAME = "$.username";
+    private static final String JSON_PATH_PASSWORD = "$.password";
+    private static final String JSON_PATH_FIRST_NAME = "$.firstName";
+    private static final String JSON_PATH_LAST_NAME = "$.lastName";
+
+    private static final String ROLE_TEST = "ROLE_TEST";
+
+    private static final String NOT_FOUND_MESSAGE_TRAINEE = "Trainee not found";
 
     @Autowired
     private MockMvc mockMvc;
@@ -59,26 +84,26 @@ public class TraineeControllerTest {
 
         mockMvc.perform(post(URL_TEMPLATE)
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("firstName", "John")
-                        .param("lastName", "Doe"))
+                        .param(PARAM_FIRST_NAME, FIRST_NAME)
+                        .param(PARAM_LAST_NAME, LAST_NAME))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.username").value("John.Doe"))
-                .andExpect(jsonPath("$.password").value("0123456789"));
+                .andExpect(jsonPath(JSON_PATH_USERNAME).value(USERNAME))
+                .andExpect(jsonPath(JSON_PATH_PASSWORD).value(PASSWORD));
     }
 
     @Test
     @WithMockUser
     void changeLogin() throws Exception {
         String credentialsUpdateDTOJson = JsonPath.parse(new HashMap<String, Object>() {{
-            put("username", "John.Doe");
-            put("oldPassword", "1234567890");
-            put("newPassword", "0123456789");
+            put(PARAM_USERNAME, USERNAME);
+            put(PARAM_OLD_PASSWORD, PASSWORD);
+            put(PARAM_NEW_PASSWORD, NEW_PASSWORD);
         }}).jsonString();
 
         when(traineeService.changePassword(any())).thenReturn(traineeUnderTest);
 
-        mockMvc.perform(put(URL_TEMPLATE + "/change-login")
+        mockMvc.perform(put(URL_TEMPLATE + URL_CHANGE_LOGIN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(credentialsUpdateDTOJson))
                 .andExpect(status().isOk());
@@ -88,14 +113,14 @@ public class TraineeControllerTest {
     @WithMockUser
     void changeLoginReturnBadRequestWhenTraineeIsNull() throws Exception {
         String credentialsUpdateDTOJson = JsonPath.parse(new HashMap<String, Object>() {{
-            put("username", "John.Doe");
-            put("oldPassword", "1234567890");
-            put("newPassword", "0123456789");
+            put(PARAM_USERNAME, USERNAME);
+            put(PARAM_OLD_PASSWORD, PASSWORD);
+            put(PARAM_NEW_PASSWORD, NEW_PASSWORD);
         }}).jsonString();
 
         when(traineeService.changePassword(any())).thenReturn(null);
 
-        mockMvc.perform(put(URL_TEMPLATE + "/change-login")
+        mockMvc.perform(put(URL_TEMPLATE + URL_CHANGE_LOGIN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(credentialsUpdateDTOJson))
                 .andExpect(status().isBadRequest());
@@ -106,21 +131,21 @@ public class TraineeControllerTest {
     void getTraineeByUsername() throws Exception {
         when(traineeService.getTraineeByUsername(anyString())).thenReturn(traineeUnderTest);
 
-        mockMvc.perform(get(URL_TEMPLATE + "/John.Doe")
+        mockMvc.perform(get(URL_TEMPLATE + URL_USERNAME, USERNAME)
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.username").value("John.Doe"))
-                .andExpect(jsonPath("$.firstName").value("John"))
-                .andExpect(jsonPath("$.lastName").value("Doe"));
+                .andExpect(jsonPath(JSON_PATH_USERNAME).value(USERNAME))
+                .andExpect(jsonPath(JSON_PATH_FIRST_NAME).value(FIRST_NAME))
+                .andExpect(jsonPath(JSON_PATH_LAST_NAME).value(LAST_NAME));
     }
 
     @Test
     @WithMockUser
     void shouldReturnNotFoundForBadUsernameWhenGetTraineeByUsername() throws Exception {
-        when(traineeService.getTraineeByUsername(anyString())).thenThrow(new TraineeNotFoundException("Trainee not found"));
+        when(traineeService.getTraineeByUsername(anyString())).thenThrow(new TraineeNotFoundException(NOT_FOUND_MESSAGE_TRAINEE));
 
-        mockMvc.perform(get(URL_TEMPLATE + "/John.Doe")
+        mockMvc.perform(get(URL_TEMPLATE + URL_USERNAME, USERNAME)
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED))
                 .andExpect(status().isNotFound());
     }
@@ -129,9 +154,9 @@ public class TraineeControllerTest {
     @WithMockUser
     void updateTraineeProfile() throws Exception {
         String traineeUpdateDTOJson = JsonPath.parse(new HashMap<String, Object>() {{
-            put("username", "John.Doe");
-            put("firstName", "John");
-            put("lastName", "Doe");
+            put(PARAM_USERNAME, USERNAME);
+            put(PARAM_FIRST_NAME, FIRST_NAME);
+            put(PARAM_LAST_NAME, LAST_NAME);
         }}).jsonString();
 
         when(traineeService.updateTrainee(any())).thenReturn(traineeUnderTest);
@@ -141,9 +166,9 @@ public class TraineeControllerTest {
                         .content(traineeUpdateDTOJson))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.username").value("John.Doe"))
-                .andExpect(jsonPath("$.firstName").value("John"))
-                .andExpect(jsonPath("$.lastName").value("Doe"));
+                .andExpect(jsonPath(JSON_PATH_USERNAME).value(USERNAME))
+                .andExpect(jsonPath(JSON_PATH_FIRST_NAME).value(FIRST_NAME))
+                .andExpect(jsonPath(JSON_PATH_LAST_NAME).value(LAST_NAME));
     }
 
     @Test
@@ -153,7 +178,7 @@ public class TraineeControllerTest {
 
         mockMvc.perform(delete(URL_TEMPLATE)
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("username", "John.Doe"))
+                        .param(PARAM_USERNAME, USERNAME))
                 .andExpect(status().isOk());
     }
 
@@ -164,7 +189,7 @@ public class TraineeControllerTest {
 
         mockMvc.perform(delete(URL_TEMPLATE)
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("username", "John.Doe"))
+                        .param(PARAM_USERNAME, USERNAME))
                 .andExpect(status().isBadRequest());
     }
 
@@ -175,8 +200,8 @@ public class TraineeControllerTest {
 
         mockMvc.perform(patch(URL_TEMPLATE)
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("username", "John.Doe")
-                        .param("isActive", "true"))
+                        .param(PARAM_USERNAME, USERNAME)
+                        .param(PARAM_IS_ACTIVE, ACTIVE_STATUS))
                 .andExpect(status().isOk());
     }
 
@@ -187,8 +212,8 @@ public class TraineeControllerTest {
 
         mockMvc.perform(patch(URL_TEMPLATE)
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("username", "John.Doe")
-                        .param("isActive", "true"))
+                        .param(PARAM_USERNAME, USERNAME)
+                        .param(PARAM_IS_ACTIVE, ACTIVE_STATUS))
                 .andExpect(status().isBadRequest());
     }
 
@@ -197,20 +222,20 @@ public class TraineeControllerTest {
     void shouldReturnUnauthorizedForUnauthenticatedUser() throws Exception {
         mockMvc.perform(patch(URL_TEMPLATE)
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("username", "John.Doe")
-                        .param("isActive", "true"))
+                        .param(PARAM_USERNAME, USERNAME)
+                        .param(PARAM_IS_ACTIVE, ACTIVE_STATUS))
                 .andExpect(status().isUnauthorized());
 
         verify(traineeService, never()).toggleTraineeActivation(anyString(), anyBoolean());
     }
 
     @Test
-    @WithMockUser(username = "John.Doe", authorities = {"ROLE_TEST"})
+    @WithMockUser(username = USERNAME, authorities = {ROLE_TEST})
     void shouldReturnForbiddenForUnauthorizedUser() throws Exception {
         mockMvc.perform(patch(URL_TEMPLATE)
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("username", "John.Doe")
-                        .param("isActive", "true"))
+                        .param(PARAM_USERNAME, USERNAME)
+                        .param(PARAM_IS_ACTIVE, ACTIVE_STATUS))
                 .andExpect(status().is3xxRedirection());
 
         verify(traineeService, never()).toggleTraineeActivation(anyString(), anyBoolean());
@@ -221,8 +246,8 @@ public class TraineeControllerTest {
     void shouldReturnUnAuthorizedForAnonymousUser() throws Exception {
         mockMvc.perform(patch(URL_TEMPLATE)
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("username", "John.Doe")
-                        .param("isActive", "true"))
+                        .param(PARAM_USERNAME, USERNAME)
+                        .param(PARAM_IS_ACTIVE, ACTIVE_STATUS))
                 .andExpect(status().isUnauthorized());
 
         verify(traineeService, never()).toggleTraineeActivation(anyString(), anyBoolean());

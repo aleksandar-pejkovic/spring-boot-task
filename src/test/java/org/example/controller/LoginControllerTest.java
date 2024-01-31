@@ -25,6 +25,8 @@ import org.springframework.test.web.servlet.MockMvc;
 class LoginControllerTest {
 
     private static final String URL_TEMPLATE = "/api/login";
+    private static final String DEFAULT_USERNAME = "John.Doe";
+    private static final String DEFAULT_PASSWORD = "0123456789";
 
     @Autowired
     private MockMvc mockMvc;
@@ -35,8 +37,8 @@ class LoginControllerTest {
     @Test
     void loginSuccess() throws Exception {
         CredentialsDTO credentialsDTO = CredentialsDTO.builder()
-                .username("John.Doe")
-                .password("0123456789")
+                .username(DEFAULT_USERNAME)
+                .password(DEFAULT_PASSWORD)
                 .build();
 
         Authentication authentication = new UsernamePasswordAuthenticationToken(
