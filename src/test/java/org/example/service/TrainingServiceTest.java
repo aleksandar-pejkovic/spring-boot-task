@@ -1,219 +1,207 @@
 package org.example.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
-import org.example.dao.TraineeDAO;
-import org.example.dao.TrainerDAO;
-import org.example.dao.TrainingDAO;
 import org.example.dto.training.TrainingCreateDTO;
-import org.example.enums.TrainingTypeName;
-import org.example.model.Trainee;
-import org.example.model.Trainer;
+import org.example.exception.notfound.TraineeNotFoundException;
+import org.example.exception.notfound.TrainerNotFoundException;
+import org.example.exception.notfound.TrainingTypeNotFoundException;
 import org.example.model.Training;
-import org.example.model.TrainingType;
-import org.example.model.User;
+import org.example.repository.TraineeRepository;
+import org.example.repository.TrainerRepository;
+import org.example.repository.TrainingRepository;
+import org.example.repository.TrainingTypeRepository;
+import org.example.utils.dummydata.TrainingDummyDataFactory;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+@ExtendWith(SpringExtension.class)
+@ContextConfiguration(classes = {TrainingService.class})
 class TrainingServiceTest {
 
-    @Mock
-    private TrainingDAO trainingDAO;
+    @MockBean
+    private TrainingRepository trainingRepository;
 
-    @Mock
-    private TraineeDAO traineeDAO;
+    @MockBean
+    private TrainingTypeRepository trainingTypeRepository;
 
-    @Mock
-    private TrainerDAO trainerDAO;
+    @MockBean
+    private TraineeRepository traineeRepository;
 
-    @InjectMocks
+    @MockBean
+    private TrainerRepository trainerRepository;
+
+    @Autowired
     private TrainingService trainingService;
 
-    private Training training;
-
-    private Trainee trainee;
-
-    private Trainer trainer;
+    private Training trainingUnderTest;
 
     @BeforeEach
-    void setUp() throws Exception {
-        try (AutoCloseable autoCloseable = MockitoAnnotations.openMocks(this)) {
-            User user1 = User.builder()
-                    .isActive(true)
-                    .lastName("Biaggi")
-                    .firstName("Max")
-                    .username("Max.Biaggi")
-                    .password("0123456789")
-                    .build();
-
-            User user2 = User.builder()
-                    .isActive(true)
-                    .lastName("Storrari")
-                    .firstName("Matteo")
-                    .username("Matteo.Storrari")
-                    .password("0123456789")
-                    .build();
-
-            trainee = Trainee.builder()
-                    .user(user1)
-                    .address("11000 Belgrade")
-                    .dateOfBirth(new Date())
-                    .trainerList(new ArrayList<>())
-                    .trainingList(new ArrayList<>())
-                    .build();
-
-            trainer = Trainer.builder()
-                    .user(user2)
-                    .traineeList(new ArrayList<>())
-                    .trainingList(new ArrayList<>())
-                    .build();
-
-            training = new Training();
-            training.setId(1L);
-            training.setTrainee(trainee);
-            training.setTrainer(trainer);
-            training.setTrainingType(
-                    TrainingType.builder()
-                            .id(1L)
-                            .trainingTypeName(TrainingTypeName.AEROBIC)
-                            .build()
-            );
-        }
+    void setUp() {
+        trainingUnderTest = TrainingDummyDataFactory.getTrainingUnderTest();
     }
 
     @Test
-    void createTraining() {
-        // Arrange
-        TrainingCreateDTO trainingCreateDTO = TrainingCreateDTO.builder()
-                .traineeUsername(training.getTrainee().getUsername())
-                .trainerUsername(training.getTrainer().getUsername())
-                .trainingTypeName(training.getTrainingType().getTrainingTypeName())
-                .trainingDate(training.getTrainingDate())
-                .trainingDuration(training.getTrainingDuration())
-                .build();
+    @DisplayName("Should return true when createTraining")
+    void shouldReturnTrueWhenCreateTraining() {
+        TrainingCreateDTO trainingCreateDTO = createTrainingCreateDTO();
 
-        when(traineeDAO.findTraineeByUsername(anyString())).thenReturn(trainee);
-        when(trainerDAO.findTrainerByUsername(anyString())).thenReturn(trainer);
-        when(trainingDAO.findTrainingTypeByName(any())).thenReturn(training.getTrainingType());
-        when(trainingDAO.saveTraining(any())).thenReturn(training);
+        when(traineeRepository.findByUserUsername(anyString())).thenReturn(Optional.of(trainingUnderTest.getTrainee()));
+        when(trainerRepository.findByUserUsername(anyString())).thenReturn(Optional.of(trainingUnderTest.getTrainer()));
+        when(trainingTypeRepository.findByTrainingTypeName(any())).thenReturn(Optional.of(trainingUnderTest.getTrainingType()));
+        when(trainingRepository.save(any())).thenReturn(trainingUnderTest);
 
-        // Act
         boolean result = trainingService.createTraining(trainingCreateDTO);
 
-        // Assert
         ArgumentCaptor<Training> trainingCaptor = ArgumentCaptor.forClass(Training.class);
-        verify(trainingDAO, times(1)).saveTraining(trainingCaptor.capture());
+        verify(trainingRepository).save(trainingCaptor.capture());
         assertTrue(result);
-        assertEquals(training.getTrainingDuration(), trainingCaptor.getValue().getTrainingDuration());
+        assertEquals(trainingUnderTest.getTrainingDuration(), trainingCaptor.getValue().getTrainingDuration());
+    }
+
+
+    @Test
+    @DisplayName("Should throw TraineeNotFoundException for invalid traineeUsername when createTraining")
+    void shouldThrowTraineeNotFoundExceptionForInvalidTraineeUsernameWhenCreateTraining() {
+        TrainingCreateDTO trainingCreateDTO = createTrainingCreateDTO();
+        when(traineeRepository.findByUserUsername(any())).thenReturn(Optional.empty());
+
+        assertThrows(TraineeNotFoundException.class, () -> trainingService.createTraining(trainingCreateDTO));
+
+        verify(traineeRepository).findByUserUsername(trainingCreateDTO.getTraineeUsername());
     }
 
     @Test
-    void getTrainingById() {
-        // Arrange
-        when(trainingDAO.findById(1L)).thenReturn(training);
+    @DisplayName("Should throw TrainerNotFoundException for invalid trainerUsername when createTraining")
+    void shouldThrowTrainerNotFoundExceptionForInvalidTrainerUsernameWhenCreateTraining() {
+        TrainingCreateDTO trainingCreateDTO = createTrainingCreateDTO();
+        when(traineeRepository.findByUserUsername(anyString())).thenReturn(Optional.of(trainingUnderTest.getTrainee()));
+        when(trainerRepository.findByUserUsername(anyString())).thenReturn(Optional.empty());
 
-        // Act
+        assertThrows(TrainerNotFoundException.class, () -> trainingService.createTraining(trainingCreateDTO));
+
+        verify(trainerRepository).findByUserUsername(trainingCreateDTO.getTrainerUsername());
+    }
+
+    @Test
+    @DisplayName("Should throw TrainingTypeNotFound for invalid trainingTypeName when createTraining")
+    void shouldThrowTrainingTypeNotFoundExceptionForInvalidTrainingTypeNameWhenCreateTraining() {
+        TrainingCreateDTO trainingCreateDTO = createTrainingCreateDTO();
+        when(traineeRepository.findByUserUsername(anyString())).thenReturn(Optional.of(trainingUnderTest.getTrainee()));
+        when(trainerRepository.findByUserUsername(anyString())).thenReturn(Optional.of(trainingUnderTest.getTrainer()));
+        when(trainingTypeRepository.findByTrainingTypeName(any())).thenReturn(Optional.empty());
+
+        assertThrows(TrainingTypeNotFoundException.class, () -> trainingService.createTraining(trainingCreateDTO));
+
+        verify(trainingTypeRepository).findByTrainingTypeName(trainingCreateDTO.getTrainingTypeName());
+    }
+
+    @Test
+    @DisplayName("Should return Training when getTrainingById")
+    void shouldReturnTrainingWhenGetTrainingById() {
+        when(trainingRepository.findById(1L)).thenReturn(Optional.of(trainingUnderTest));
+
         Training result = trainingService.getTrainingById(1L);
 
-        // Assert
-        verify(trainingDAO, times(1)).findById(1L);
-        assertEquals(training, result);
+        verify(trainingRepository).findById(1L);
+        assertEquals(trainingUnderTest, result);
     }
 
     @Test
-    void updateTraining() {
-        // Arrange
-        when(trainingDAO.updateTraining(training)).thenReturn(training);
+    @DisplayName("Should return Training when updateTraining")
+    void shouldReturnTrainingWhenUpdateTraining() {
+        when(trainingRepository.save(trainingUnderTest)).thenReturn(trainingUnderTest);
 
-        // Act
-        Training result = trainingService.updateTraining(training);
+        Training result = trainingService.updateTraining(trainingUnderTest);
 
-        // Assert
-        verify(trainingDAO, times(1)).updateTraining(training);
-        assertEquals(training, result);
+        verify(trainingRepository).save(trainingUnderTest);
+        assertEquals(trainingUnderTest, result);
     }
 
     @Test
-    void deleteTraining() {
-        // Arrange
-        when(trainingDAO.deleteTraining(training)).thenReturn(true);
+    @DisplayName("Should return true when deleteTraining")
+    void shouldReturnTrueWhenDeleteTraining() {
+        doNothing().when(trainingRepository).delete(trainingUnderTest);
 
-        // Act
-        boolean result = trainingService.deleteTraining(training);
+        boolean result = trainingService.deleteTraining(trainingUnderTest);
 
-        // Assert
-        verify(trainingDAO, times(1)).deleteTraining(training);
+        verify(trainingRepository).delete(trainingUnderTest);
         assertTrue(result);
     }
 
     @Test
-    void getTraineeTrainingList() {
-        // Arrange
-        int trainingDuration = 10;
-        List<Training> expectedTrainingList = Collections.singletonList(training);
-        when(trainingDAO.getTraineeTrainingList(anyString(), any(), any(), anyString(), anyString())).thenReturn(expectedTrainingList);
+    @DisplayName("Should return list of trainings when getTraineeTrainingList")
+    void shouldReturnTrainingListWhenGetTraineeTrainingList() {
+        List<Training> expectedTrainingList = Collections.singletonList(trainingUnderTest);
+        when(trainingRepository.findByTraineeUserUsernameAndTrainingDateBetweenAndTrainerUserUsernameAndTrainingTypeTrainingTypeName(anyString(), any(), any(), anyString(), anyString())).thenReturn(expectedTrainingList);
 
-        // Act
         List<Training> result = trainingService.getTraineeTrainingList(
-                trainee.getUsername(),
+                trainingUnderTest.getTrainee().getUsername(),
                 new Date(),
                 new Date(),
-                training.getTrainer().getUsername(),
-                training.getTrainingType().getTrainingTypeName().name()
+                trainingUnderTest.getTrainer().getUsername(),
+                trainingUnderTest.getTrainingType().getTrainingTypeName().name()
         );
 
-        // Assert
-        verify(trainingDAO, times(1)).getTraineeTrainingList(anyString(), any(), any(), anyString(), anyString());
+        verify(trainingRepository).findByTraineeUserUsernameAndTrainingDateBetweenAndTrainerUserUsernameAndTrainingTypeTrainingTypeName(anyString(), any(), any(), anyString(), anyString());
         assertEquals(expectedTrainingList, result);
     }
 
     @Test
-    void getTrainerTrainingList() {
-        // Arrange
-        int trainingDuration = 10;
-        List<Training> expectedTrainingList = Collections.singletonList(training);
-        when(trainingDAO.getTrainerTrainingList(anyString(), any(), any(), anyString())).thenReturn(expectedTrainingList);
+    @DisplayName("Should return list of trainings when getTrainerTrainingList")
+    void shouldReturnTrainingListWhenGetTrainerTrainingList() {
+        List<Training> expectedTrainingList = Collections.singletonList(trainingUnderTest);
+        when(trainingRepository.findByTrainerUserUsernameAndTrainingDateBetweenAndTraineeUserUsername(anyString(), any(), any(), anyString())).thenReturn(expectedTrainingList);
 
-        // Act
         List<Training> result = trainingService.getTrainerTrainingList(
-                trainer.getUsername(),
+                trainingUnderTest.getTrainer().getUsername(),
                 new Date(),
                 new Date(),
-                training.getTrainee().getUsername()
+                trainingUnderTest.getTrainee().getUsername()
         );
 
-        // Assert
-        verify(trainingDAO, times(1)).getTrainerTrainingList(anyString(), any(), any(), anyString());
+        verify(trainingRepository).findByTrainerUserUsernameAndTrainingDateBetweenAndTraineeUserUsername(anyString(), any(), any(), anyString());
         assertEquals(expectedTrainingList, result);
     }
 
     @Test
-    void getAllTrainings() {
-        // Arrange
-        List<Training> expectedTrainingList = Collections.singletonList(training);
-        when(trainingDAO.findAllTrainings()).thenReturn(expectedTrainingList);
+    @DisplayName("Should return list of trainings when getAllTrainings")
+    void shouldReturnTrainingListWhenGetAllTrainings() {
+        List<Training> expectedTrainingList = Collections.singletonList(trainingUnderTest);
+        when(trainingRepository.findAll()).thenReturn(expectedTrainingList);
 
-        // Act
         List<Training> result = trainingService.getAllTrainings();
 
-        // Assert
-        verify(trainingDAO, times(1)).findAllTrainings();
+        verify(trainingRepository).findAll();
         assertEquals(expectedTrainingList, result);
     }
 
+    private TrainingCreateDTO createTrainingCreateDTO() {
+        return TrainingCreateDTO.builder()
+                .traineeUsername(trainingUnderTest.getTrainee().getUsername())
+                .trainerUsername(trainingUnderTest.getTrainer().getUsername())
+                .trainingTypeName(trainingUnderTest.getTrainingType().getTrainingTypeName())
+                .trainingDate(trainingUnderTest.getTrainingDate())
+                .trainingDuration(trainingUnderTest.getTrainingDuration())
+                .build();
+    }
 }

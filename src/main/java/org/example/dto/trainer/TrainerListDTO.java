@@ -2,12 +2,14 @@ package org.example.dto.trainer;
 
 import java.util.List;
 
-import lombok.Builder;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
-@Builder
+@NoArgsConstructor
 public class TrainerListDTO {
 
+    @NotNull
     private List<String> trainerUsernameList;
 }

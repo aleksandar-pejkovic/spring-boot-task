@@ -8,21 +8,25 @@ import org.example.dto.training.TrainingDTO;
 import org.example.dto.trainingType.TrainingTypeDTO;
 import org.example.enums.TrainingTypeName;
 import org.example.model.Training;
+import org.example.model.TrainingType;
 import org.example.service.TrainingService;
-import org.example.utils.TrainingConverter;
+import org.example.utils.converter.TrainingConverter;
+import org.example.utils.converter.TrainingTypeConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RestController
-@RequestMapping(value = "/api/trainings", consumes = {"application/JSON"}, produces = {"application/JSON"})
+@RequestMapping(value = "/api/trainings")
 public class TrainingController {
 
     private final TrainingService trainingService;
@@ -67,7 +71,7 @@ public class TrainingController {
     }
 
     @PostMapping
-    public ResponseEntity<Boolean> addTraining(TrainingCreateDTO trainingCreateDTO) {
+    public ResponseEntity<Boolean> addTraining(@Valid @RequestBody TrainingCreateDTO trainingCreateDTO) {
         log.info("Endpoint '/api/trainings' was called to add new training");
         boolean successfullyAddedTraining = trainingService.createTraining(trainingCreateDTO);
         return (successfullyAddedTraining)
@@ -78,6 +82,7 @@ public class TrainingController {
     @GetMapping("/training-types")
     public List<TrainingTypeDTO> getAllTrainingTypes() {
         log.info("Endpoint '/api/trainings/training-types' was called to get all training types");
-        return trainingService.finaAllTrainingTypes();
+        List<TrainingType> trainingTypes = trainingService.finaAllTrainingTypes();
+        return TrainingTypeConverter.convertToDtoList(trainingTypes);
     }
 }

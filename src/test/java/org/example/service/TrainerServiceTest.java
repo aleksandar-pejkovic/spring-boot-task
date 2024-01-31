@@ -1,207 +1,265 @@
 package org.example.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
-import org.example.dao.TrainerDAO;
-import org.example.dao.TrainingDAO;
 import org.example.dto.credentials.CredentialsUpdateDTO;
 import org.example.dto.trainer.TrainerUpdateDTO;
 import org.example.enums.TrainingTypeName;
+import org.example.exception.credentials.IdenticalPasswordException;
+import org.example.exception.credentials.IncorrectPasswordException;
+import org.example.exception.notfound.TrainerNotFoundException;
+import org.example.exception.notfound.TrainingTypeNotFoundException;
 import org.example.model.Trainer;
 import org.example.model.TrainingType;
-import org.example.model.User;
-import org.example.utils.CredentialsGenerator;
+import org.example.repository.TraineeRepository;
+import org.example.repository.TrainerRepository;
+import org.example.repository.TrainingTypeRepository;
+import org.example.utils.credentials.CredentialsGenerator;
+import org.example.utils.dummydata.TrainerDummyDataFactory;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+@ExtendWith(SpringExtension.class)
+@ContextConfiguration(classes = {TrainerService.class})
 class TrainerServiceTest {
 
-    @Mock
-    private TrainerDAO trainerDAO;
+    public static final String USERNAME = "Joe.Johnson";
+    public static final String PASSWORD = "0123456789";
+    public static final String WRONG_OLD_PASSWORD = "wrongOldPassword";
+    public static final String NEW_PASSWORD = "newPassword";
+    public static final String BAD_USERNAME = "Bad.Username";
+    public static final boolean IS_ACTIVE = true;
 
-    @Mock
-    private TrainingDAO trainingDAO;
+    @MockBean
+    private TrainerRepository trainerRepository;
 
-    @Mock
+    @MockBean
+    private TraineeRepository traineeRepository;
+
+    @MockBean
+    private TrainingTypeRepository trainingTypeRepository;
+
+    @MockBean
     private CredentialsGenerator credentialsGenerator;
 
-    @InjectMocks
+    @Autowired
     private TrainerService trainerService;
 
-    private Trainer trainer;
+    private Trainer trainerUnderTest;
 
     @BeforeEach
-    void setUp() throws Exception {
-        try (AutoCloseable autoCloseable = MockitoAnnotations.openMocks(this)) {
-            User user = User.builder()
-                    .isActive(true)
-                    .lastName("Rossi")
-                    .firstName("Valentino")
-                    .username("Valentino.Rossi")
-                    .password("9876543210")
-                    .build();
-
-            trainer = Trainer.builder()
-                    .user(user)
-                    .specialization(TrainingType.builder()
-                            .id(1L)
-                            .trainingTypeName(TrainingTypeName.AEROBIC)
-                            .build())
-                    .build();
-        }
+    void setUp() {
+        trainerUnderTest = TrainerDummyDataFactory.getTrainerUnderTestingJoeJohnson();
     }
 
     @Test
-    void createTrainer() {
-        // Arrange
+    @DisplayName("Should return Trainer when createTrainer")
+    void shouldReturnTrainerWhenCreateTrainer() {
         TrainingType trainingType = TrainingType.builder()
                 .id(1L)
                 .trainingTypeName(TrainingTypeName.AEROBIC)
                 .build();
 
-        when(trainingDAO.findTrainingTypeByName(any())).thenReturn(trainingType);
-        when(credentialsGenerator.generateUsername(any())).thenReturn("Valentino.Rossi");
-        when(credentialsGenerator.generateRandomPassword()).thenReturn("9876543210");
-        when(trainerDAO.saveTrainer(any())).thenReturn(trainer);
+        when(trainingTypeRepository.findByTrainingTypeName(any())).thenReturn(Optional.of(trainingType));
+        when(credentialsGenerator.generateUsername(any())).thenReturn(USERNAME);
+        when(credentialsGenerator.generateRandomPassword()).thenReturn(PASSWORD);
+        when(trainerRepository.save(any())).thenReturn(trainerUnderTest);
 
-        // Act
-        Trainer result = trainerService.createTrainer(trainer.getUser().getFirstName(),
-                trainer.getUser().getLastName(), trainer.getSpecialization().getTrainingTypeName());
+        Trainer result = trainerService.createTrainer(trainerUnderTest.getUser().getFirstName(),
+                trainerUnderTest.getUser().getLastName(), trainerUnderTest.getSpecialization().getTrainingTypeName());
 
-        // Assert
-        verify(trainerDAO, times(1)).saveTrainer(any());
+        verify(trainerRepository).save(any());
+        assertEquals(USERNAME, result.getUsername());
+        assertEquals(PASSWORD, result.getPassword());
     }
 
     @Test
-    void getTrainerByUsername() {
-        // Arrange
-        String username = "testUser";
-        Trainer expectedTrainer = new Trainer();
-        when(trainerDAO.findTrainerByUsername(username)).thenReturn(expectedTrainer);
+    @DisplayName("Should return Trainee when getTraineeByUsername")
+    void shouldReturnTrainerWhenGetTrainerByUsername() {
+        when(trainerRepository.findByUserUsername(anyString())).thenReturn(Optional.of(trainerUnderTest));
 
-        // Act
-        Trainer result = trainerService.getTrainerByUsername(username);
+        Trainer result = trainerService.getTrainerByUsername(USERNAME);
 
-        // Assert
-        verify(trainerDAO, times(1)).findTrainerByUsername(username);
-        assertEquals(expectedTrainer, result);
+        verify(trainerRepository).findByUserUsername(anyString());
+        assertEquals(trainerUnderTest, result);
     }
 
     @Test
-    void changePassword() {
-        // Arrange
-        CredentialsUpdateDTO credentialsUpdateDTO = CredentialsUpdateDTO.builder()
-                .username("testUser")
-                .oldPassword("oldPassword")
-                .newPassword("newPassword")
-                .build();
+    @DisplayName("Should throw TrainerNotFoundException for invalid username when getTrainerByUsername")
+    void shouldThrowTrainerNotFoundExceptionForInvalidUsernameWhenGetTrainerByUsername() {
+        when(trainerRepository.findByUserUsername(anyString())).thenReturn(Optional.empty());
 
-        when(trainerService.getTrainerByUsername(credentialsUpdateDTO.getUsername())).thenReturn(trainer);
-        when(trainerDAO.updateTrainer(trainer)).thenReturn(trainer);
+        assertThrows(TrainerNotFoundException.class,
+                () -> trainerService.getTrainerByUsername(USERNAME));
 
-        // Act
+        verify(trainerRepository).findByUserUsername(USERNAME);
+    }
+
+    @Test
+    @DisplayName("Should return Trainee when changePassword")
+    void shouldReturnTrainerWhenChangePassword() {
+        CredentialsUpdateDTO credentialsUpdateDTO =
+                createCredentialsUpdateDTO(PASSWORD, NEW_PASSWORD);
+
+        when(trainerRepository.findByUserUsername(any())).thenReturn(Optional.ofNullable(trainerUnderTest));
+        when(trainerRepository.save(trainerUnderTest)).thenReturn(trainerUnderTest);
+
         Trainer result = trainerService.changePassword(credentialsUpdateDTO);
 
-        // Assert
-        verify(trainerDAO, times(1)).updateTrainer(trainer);
+        verify(trainerRepository).save(trainerUnderTest);
         assertEquals(credentialsUpdateDTO.getNewPassword(), result.getPassword());
     }
 
     @Test
-    void updateTrainer() {
-        // Arrange
+    @DisplayName("Should throw IncorrectPasswordException for incorrect old password")
+    void shouldThrowIncorrectPasswordExceptionWhenOldPasswordIsIncorrect() {
+        CredentialsUpdateDTO credentialsUpdateDTO =
+                createCredentialsUpdateDTO(WRONG_OLD_PASSWORD, NEW_PASSWORD);
+
+        when(trainerRepository.findByUserUsername(any())).thenReturn(Optional.ofNullable(trainerUnderTest));
+
+        assertThrows(IncorrectPasswordException.class, () -> trainerService.changePassword(credentialsUpdateDTO));
+
+        verify(trainerRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should throw IdenticalPasswordException when old password equals new password")
+    void shouldThrowIdenticalPasswordExceptionWhenOldPasswordEqualsNewPassword() {
+        CredentialsUpdateDTO credentialsUpdateDTO =
+                createCredentialsUpdateDTO(PASSWORD, PASSWORD);
+
+        when(trainerRepository.findByUserUsername(any())).thenReturn(Optional.ofNullable(trainerUnderTest));
+
+        assertThrows(IdenticalPasswordException.class, () -> trainerService.changePassword(credentialsUpdateDTO));
+
+        verify(trainerRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should return Trainer when updateTrainer")
+    void shouldReturnTrainerWhenUpdateTrainer() {
         TrainingType trainingType = TrainingType.builder()
                 .id(1L)
                 .trainingTypeName(TrainingTypeName.AEROBIC)
                 .build();
 
-        when(trainerDAO.findTrainerByUsername(any())).thenReturn(trainer);
-        when(trainingDAO.findTrainingTypeByName(any())).thenReturn(trainingType);
-        when(trainerDAO.updateTrainer(trainer)).thenReturn(trainer);
-        TrainerUpdateDTO trainerUpdateDTO = TrainerUpdateDTO.builder()
-                .username(trainer.getUsername())
-                .firstName(trainer.getUser().getFirstName())
-                .lastName(trainer.getUser().getLastName())
-                .specialization(trainer.getSpecialization().getTrainingTypeName())
-                .isActive(trainer.getUser().isActive())
-                .build();
+        when(trainerRepository.findByUserUsername(any())).thenReturn(Optional.of(trainerUnderTest));
+        when(trainingTypeRepository.findByTrainingTypeName(any())).thenReturn(Optional.of(trainingType));
+        when(trainerRepository.save(trainerUnderTest)).thenReturn(trainerUnderTest);
+        TrainerUpdateDTO trainerUpdateDTO = createTrainerUpdateDTO();
 
-        // Act
         trainerService.updateTrainer(trainerUpdateDTO);
 
-        // Assert
-        verify(trainerDAO, times(1)).updateTrainer(trainer);
+        verify(trainerRepository).save(trainerUnderTest);
     }
 
     @Test
-    void toggleTrainerActivationTest() {
-        // Arrange
-        when(trainerDAO.findTrainerByUsername(anyString())).thenReturn(trainer);
-        when(trainerDAO.updateTrainer(trainer)).thenReturn(trainer);
+    @DisplayName("Should throw TrainingTypeNotFoundException for incorrect TrainingType when updateTrainer")
+    void shouldThrowTrainingTypeNotFoundExceptionForIncorrectTrainingTypeNameWhenUpdateTrainer() {
+        TrainerUpdateDTO trainerUpdateDTO = createTrainerUpdateDTO();
 
-        // Act
-        boolean result = trainerService.toggleTrainerActivation(trainer.getUsername(), trainer.getUser().isActive());
+        when(trainerRepository.findByUserUsername(any())).thenReturn(Optional.of(trainerUnderTest));
+        when(trainingTypeRepository.findByTrainingTypeName(any())).thenReturn(Optional.empty());
 
-        // Assert
-        verify(trainerDAO, times(1)).updateTrainer(trainer);
+        assertThrows(TrainingTypeNotFoundException.class, () -> trainerService.updateTrainer(trainerUpdateDTO));
+
+        verify(trainerRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should return true when toggleTrainerActivation")
+    void shouldReturnTrueWhenToggleTrainerActivation() {
+        when(trainerRepository.findByUserUsername(anyString())).thenReturn(Optional.of(trainerUnderTest));
+        when(trainerRepository.save(trainerUnderTest)).thenReturn(trainerUnderTest);
+
+        boolean result = trainerService.toggleTrainerActivation(trainerUnderTest.getUsername(), trainerUnderTest.getUser().isActive());
+
+        verify(trainerRepository).save(trainerUnderTest);
         assertTrue(result);
     }
 
     @Test
-    void deleteTrainer() {
-        // Arrange
-        String username = "testUser";
-        String password = "testPassword";
-        when(trainerDAO.deleteTrainerByUsername(username)).thenReturn(true);
+    @DisplayName("Should throw TrainerNotFoundException for invalid username in toggleTrainerActivation")
+    void shouldThrowTrainerNotFoundExceptionForInvalidUsernameWhenToggleTrainerActivation() {
+        when(trainerRepository.findByUserUsername(anyString())).thenReturn(Optional.empty());
 
-        // Act
-        boolean result = trainerService.deleteTrainer(username, password);
+        assertThrows(TrainerNotFoundException.class,
+                () -> trainerService.toggleTrainerActivation(BAD_USERNAME, IS_ACTIVE));
 
-        // Assert
-        verify(trainerDAO, times(1)).deleteTrainerByUsername(username);
+        verify(trainerRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should return true when deleteTrainer")
+    void shouldReturnTrueWhenDeleteTrainer() {
+        String username = trainerUnderTest.getUsername();
+        when(trainerRepository.deleteByUserUsername(username)).thenReturn(IS_ACTIVE);
+
+        boolean result = trainerService.deleteTrainer(username);
+
+        verify(trainerRepository).deleteByUserUsername(username);
         assertTrue(result);
     }
 
     @Test
-    void getNotAssignedTrainerList() {
-        // Arrange
-        String traineeUsername = "traineeUser";
-        String password = "testPassword";
+    @DisplayName("Should return list of trainers when getNotAssignedTrainerList")
+    void shouldReturnTrainerListWhenGetNotAssignedTrainerList() {
+        String traineeUsername = trainerUnderTest.getUsername();
         List<Trainer> expectedTrainers = Collections.singletonList(new Trainer());
-        when(trainerDAO.getNotAssignedTrainers(traineeUsername)).thenReturn(expectedTrainers);
+        when(trainerRepository.findByTraineeListUserUsernameAndUserIsActiveIsTrueOrTraineeListIsNull(traineeUsername)).thenReturn(expectedTrainers);
 
-        // Act
         List<Trainer> result = trainerService.getNotAssignedTrainerList(traineeUsername);
 
-        // Assert
-        verify(trainerDAO, times(1)).getNotAssignedTrainers(traineeUsername);
+        verify(trainerRepository).findByTraineeListUserUsernameAndUserIsActiveIsTrueOrTraineeListIsNull(traineeUsername);
         assertEquals(expectedTrainers, result);
     }
 
     @Test
-    void getAllTrainers() {
-        // Arrange
+    @DisplayName("Should return list of trainers when getAllTrainers")
+    void shouldReturnTrainerListWhenGetAllTrainers() {
         List<Trainer> expectedTrainers = Collections.singletonList(new Trainer());
-        when(trainerDAO.getAllTrainers()).thenReturn(expectedTrainers);
+        when(trainerRepository.findAll()).thenReturn(expectedTrainers);
 
-        // Act
         List<Trainer> result = trainerService.getAllTrainers();
 
-        // Assert
-        verify(trainerDAO, times(1)).getAllTrainers();
+        verify(trainerRepository).findAll();
         assertEquals(expectedTrainers, result);
     }
 
+    private CredentialsUpdateDTO createCredentialsUpdateDTO(String oldPassword,
+                                                            String newPassword) {
+        return CredentialsUpdateDTO.builder()
+                .username(trainerUnderTest.getUsername())
+                .oldPassword(oldPassword)
+                .newPassword(newPassword)
+                .build();
+    }
+
+    private TrainerUpdateDTO createTrainerUpdateDTO() {
+        return TrainerUpdateDTO.builder()
+                .username(trainerUnderTest.getUsername())
+                .firstName(trainerUnderTest.getUser().getFirstName())
+                .lastName(trainerUnderTest.getUser().getLastName())
+                .specialization(trainerUnderTest.getSpecialization().getTrainingTypeName())
+                .isActive(trainerUnderTest.getUser().isActive())
+                .build();
+    }
 }

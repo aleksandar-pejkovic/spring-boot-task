@@ -1,99 +1,140 @@
 package org.example.controller;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 import org.example.dto.training.TrainingCreateDTO;
-import org.example.dto.training.TrainingDTO;
-import org.example.dto.trainingType.TrainingTypeDTO;
 import org.example.enums.TrainingTypeName;
 import org.example.model.Training;
+import org.example.model.TrainingType;
 import org.example.service.TrainingService;
-import org.junit.jupiter.api.BeforeEach;
+import org.example.utils.dummydata.TrainingDummyDataFactory;
+import org.example.utils.dummydata.TrainingTypeDummyDataFactory;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.MockMvc;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+@SpringBootTest
+@AutoConfigureMockMvc
 class TrainingControllerTest {
 
-    @InjectMocks
-    private TrainingController trainingController;
+    private static final String URL_TEMPLATE = "/api/trainings";
+    private static final String URL_TRAINEE = "/trainee";
+    private static final String URL_TRAINER = "/trainer";
+    private static final String URL_TRAINING_TYPES = "/training-types";
 
-    @Mock
+    private static final String PARAM_USERNAME = "username";
+    private static final String PARAM_TRAINER_NAME = "trainerName";
+    private static final String PARAM_TRAINING_TYPE = "trainingType";
+    private static final String PARAM_TRAINEE_USERNAME = "traineeUsername";
+    private static final String PARAM_TRAINER_USERNAME = "trainerUsername";
+    private static final String PARAM_TRAINING_TYPE_NAME = "trainingTypeName";
+    private static final String PARAM_TRAINING_DATE = "trainingDate";
+    private static final String PARAM_TRAINING_DURATION = "trainingDuration";
+
+    private static final String TRAINEE_USERNAME = "John.Doe";
+    private static final String TRAINER_USERNAME = "Joe.Johnson";
+    private static final Date TRAINING_DATE = new Date("2024-01-07");
+    private static final int TRAINING_DURATION = 30;
+
+    private final ObjectMapper objectMapper;
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockBean
     private TrainingService trainingService;
 
-    @BeforeEach
-    void setUp() throws Exception {
-        try (AutoCloseable autoCloseable = MockitoAnnotations.openMocks(this)) {
-        }
+    public TrainingControllerTest(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
     }
 
     @Test
-    void getTraineeTrainingsList() {
-        String username = "Trainee1";
-        Date periodFrom = new Date();
-        Date periodTo = new Date();
-        String trainerName = "Trainer1";
-        TrainingTypeName trainingType = TrainingTypeName.AEROBIC;
+    @WithMockUser
+    void getTraineeTrainingsList() throws Exception {
+        List<Training> trainings = TrainingDummyDataFactory.getTrainingsForTrainee();
 
-        List<Training> trainings = new ArrayList<>();
-        when(trainingService.getTraineeTrainingList(username, periodFrom, periodTo, trainerName, trainingType.name()))
+        when(trainingService.getTraineeTrainingList(any(), any(), any(), any(), any()))
                 .thenReturn(trainings);
 
-        List<TrainingDTO> result = trainingController.getTraineeTrainingsList(
-                username, periodFrom, periodTo, trainerName, trainingType);
-
-        verify(trainingService, times(1)).getTraineeTrainingList(
-                username, periodFrom, periodTo, trainerName, trainingType.name());
-        assertEquals(0, result.size());
+        mockMvc.perform(get(URL_TEMPLATE + URL_TRAINEE)
+                        .param(PARAM_USERNAME, TRAINEE_USERNAME)
+                        .param(PARAM_TRAINER_NAME, TRAINER_USERNAME)
+                        .param(PARAM_TRAINING_TYPE, TrainingTypeName.AEROBIC.name()))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void getTrainerTrainingsList() {
-        String username = "Trainer1";
-        Date periodFrom = new Date();
-        Date periodTo = new Date();
-        String traineeName = "Trainee1";
+    @WithMockUser
+    void getTrainerTrainingsList() throws Exception {
+        List<Training> trainings = TrainingDummyDataFactory.getTrainingsForTrainer();
 
-        List<Training> trainings = new ArrayList<>();
-        when(trainingService.getTrainerTrainingList(username, periodFrom, periodTo, traineeName))
+        when(trainingService.getTrainerTrainingList(any(), any(), any(), any()))
                 .thenReturn(trainings);
 
-        List<TrainingDTO> result = trainingController.getTrainerTrainingsList(username, periodFrom, periodTo, traineeName);
-
-        verify(trainingService, times(1)).getTrainerTrainingList(username, periodFrom, periodTo, traineeName);
-        assertEquals(0, result.size());
+        mockMvc.perform(get(URL_TEMPLATE + URL_TRAINER)
+                        .param(PARAM_USERNAME, TRAINER_USERNAME))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void addTraining() {
-        TrainingCreateDTO trainingCreateDTO = TrainingCreateDTO.builder().build();
+    @WithMockUser
+    void addTraining() throws Exception {
+        TrainingCreateDTO trainingCreateDTO = TrainingCreateDTO.builder()
+                .traineeUsername(TRAINEE_USERNAME)
+                .trainerUsername(TRAINER_USERNAME)
+                .trainingTypeName(TrainingTypeName.AEROBIC)
+                .trainingDate(TRAINING_DATE)
+                .trainingDuration(TRAINING_DURATION)
+                .build();
 
         when(trainingService.createTraining(any())).thenReturn(true);
 
-        ResponseEntity<Boolean> result = trainingController.addTraining(trainingCreateDTO);
-
-        verify(trainingService, times(1)).createTraining(trainingCreateDTO);
-        assertEquals(true, result.getBody());
+        mockMvc.perform(post(URL_TEMPLATE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(trainingCreateDTO)))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void getAllTrainingTypes() {
-        List<TrainingTypeDTO> trainingTypes = new ArrayList<>();
+    @WithMockUser
+    void addTrainingReturnsBadRequestWhenCreateTrainingUnsuccessful() throws Exception {
+        TrainingCreateDTO trainingCreateDTO = TrainingCreateDTO.builder()
+                .traineeUsername(TRAINEE_USERNAME)
+                .trainerUsername(TRAINER_USERNAME)
+                .trainingTypeName(TrainingTypeName.AEROBIC)
+                .trainingDate(TRAINING_DATE)
+                .trainingDuration(TRAINING_DURATION)
+                .build();
+
+        when(trainingService.createTraining(any())).thenReturn(false);
+
+        mockMvc.perform(post(URL_TEMPLATE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(trainingCreateDTO)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    void getAllTrainingTypes() throws Exception {
+        List<TrainingType> trainingTypes = TrainingTypeDummyDataFactory.getTrainingTypes();
         when(trainingService.finaAllTrainingTypes()).thenReturn(trainingTypes);
 
-        List<TrainingTypeDTO> result = trainingController.getAllTrainingTypes();
-
-        verify(trainingService, times(1)).finaAllTrainingTypes();
-        assertEquals(0, result.size());
+        mockMvc.perform(get(URL_TEMPLATE + URL_TRAINING_TYPES))
+                .andExpect(status().isOk());
     }
 }

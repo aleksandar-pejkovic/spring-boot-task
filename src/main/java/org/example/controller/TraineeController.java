@@ -1,6 +1,7 @@
 package org.example.controller;
 
 import java.util.Date;
+import java.util.Optional;
 
 import org.example.dto.credentials.CredentialsDTO;
 import org.example.dto.credentials.CredentialsUpdateDTO;
@@ -8,9 +9,10 @@ import org.example.dto.trainee.TraineeDTO;
 import org.example.dto.trainee.TraineeUpdateDTO;
 import org.example.model.Trainee;
 import org.example.service.TraineeService;
-import org.example.utils.TraineeConverter;
+import org.example.utils.converter.TraineeConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -22,11 +24,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RestController
-@RequestMapping(value = "/api/trainees", consumes = {"application/JSON"}, produces = {"application/JSON"})
+@RequestMapping(value = "/api/trainees")
 public class TraineeController {
 
     private final TraineeService traineeService;
@@ -53,10 +56,10 @@ public class TraineeController {
     }
 
     @PutMapping("/change-login")
-    public ResponseEntity<Boolean> changeLogin(@RequestBody CredentialsUpdateDTO credentialsUpdateDTO) {
+    public ResponseEntity<Boolean> changeLogin(@Valid @RequestBody CredentialsUpdateDTO credentialsUpdateDTO) {
         log.info("Endpoint '/api/trainees/change-login' was called to update trainee's credentials");
         Trainee traineeAfterUpdate = traineeService.changePassword(credentialsUpdateDTO);
-        return credentialsUpdateDTO.getNewPassword().equals(traineeAfterUpdate.getPassword())
+        return Optional.ofNullable(traineeAfterUpdate).isPresent()
                 ? ResponseEntity.ok(true)
                 : ResponseEntity.badRequest().body(false);
     }
@@ -69,7 +72,7 @@ public class TraineeController {
     }
 
     @PutMapping
-    public TraineeDTO updateTraineeProfile(@RequestBody TraineeUpdateDTO traineeUpdateDTO) {
+    public TraineeDTO updateTraineeProfile(@Valid @RequestBody TraineeUpdateDTO traineeUpdateDTO) {
         log.info("Endpoint '/api/trainees' was called to update trainee profile");
         Trainee updatedTrainee = traineeService.updateTrainee(traineeUpdateDTO);
         return TraineeConverter.convertToDto(updatedTrainee);
@@ -84,6 +87,7 @@ public class TraineeController {
                 : ResponseEntity.badRequest().body(false);
     }
 
+    @Secured("ROLE_ADMIN")
     @PatchMapping
     public ResponseEntity<Boolean> toggleTraineeActivation(@RequestParam String username,
                                                            @RequestParam boolean isActive) {

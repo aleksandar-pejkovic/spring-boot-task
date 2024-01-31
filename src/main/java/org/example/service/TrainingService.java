@@ -1,19 +1,24 @@
 package org.example.service;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
-import org.example.dao.TraineeDAO;
-import org.example.dao.TrainerDAO;
-import org.example.dao.TrainingDAO;
 import org.example.dto.training.TrainingCreateDTO;
-import org.example.dto.trainingType.TrainingTypeDTO;
+import org.example.exception.date.IllegalDateArgumentException;
+import org.example.exception.notfound.TraineeNotFoundException;
+import org.example.exception.notfound.TrainerNotFoundException;
+import org.example.exception.notfound.TrainingNotFoundException;
+import org.example.exception.notfound.TrainingTypeNotFoundException;
 import org.example.model.Trainee;
 import org.example.model.Trainer;
 import org.example.model.Training;
 import org.example.model.TrainingType;
-import org.example.utils.TrainingTypeConverter;
+import org.example.repository.TraineeRepository;
+import org.example.repository.TrainerRepository;
+import org.example.repository.TrainingRepository;
+import org.example.repository.TrainingTypeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,28 +29,35 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class TrainingService {
 
-    private final TrainingDAO trainingDAO;
+    private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
 
-    private final TraineeDAO traineeDAO;
+    private final TrainingRepository trainingRepository;
 
-    private final TrainerDAO trainerDAO;
+    private final TraineeRepository traineeRepository;
+
+    private final TrainerRepository trainerRepository;
+
+    private final TrainingTypeRepository trainingTypeRepository;
 
     @Autowired
-    public TrainingService(TrainingDAO trainingDAO, TraineeDAO traineeDao, TrainerDAO trainerDAO) {
-        this.trainingDAO = trainingDAO;
-        this.traineeDAO = traineeDao;
-        this.trainerDAO = trainerDAO;
+    public TrainingService(TrainingRepository trainingRepository, TraineeRepository traineeRepository, TrainerRepository trainerRepository, TrainingTypeRepository trainingTypeRepository) {
+        this.trainingRepository = trainingRepository;
+        this.traineeRepository = traineeRepository;
+        this.trainerRepository = trainerRepository;
+        this.trainingTypeRepository = trainingTypeRepository;
     }
 
     @Transactional
     public boolean createTraining(TrainingCreateDTO trainingCreateDTO) {
-
-        Trainee trainee = traineeDAO.findTraineeByUsername(trainingCreateDTO.getTraineeUsername());
-        Trainer trainer = trainerDAO.findTrainerByUsername(trainingCreateDTO.getTrainerUsername());
+        Trainee trainee = traineeRepository.findByUserUsername(trainingCreateDTO.getTraineeUsername())
+                .orElseThrow(() -> new TraineeNotFoundException("Trainee not found"));
+        Trainer trainer = trainerRepository.findByUserUsername(trainingCreateDTO.getTrainerUsername())
+                .orElseThrow(() -> new TrainerNotFoundException("Trainer not found"));
         trainer.getTraineeList().add(trainee);
         trainee.getTrainerList().add(trainer);
 
-        TrainingType trainingType = trainingDAO.findTrainingTypeByName(trainingCreateDTO.getTrainingTypeName());
+        TrainingType trainingType = trainingTypeRepository.findByTrainingTypeName(trainingCreateDTO.getTrainingTypeName())
+                .orElseThrow(() -> new TrainingTypeNotFoundException("Training type not found"));
 
         Training training = Training.builder()
                 .trainee(trainee)
@@ -56,21 +68,22 @@ public class TrainingService {
                 .trainingDuration(trainingCreateDTO.getTrainingDuration())
                 .build();
 
-        Training savedTraining = trainingDAO.saveTraining(training);
+        Training savedTraining = trainingRepository.save(training);
         log.info("Training successfully created");
         return Optional.ofNullable(savedTraining).isPresent();
     }
 
     @Transactional(readOnly = true)
     public Training getTrainingById(long id) {
-        Training training = trainingDAO.findById(id);
+        Training training = trainingRepository.findById(id)
+                .orElseThrow(() -> new TrainingNotFoundException("Training not found"));
         log.info("Training successfully retrieved by id");
         return training;
     }
 
     @Transactional
     public Training updateTraining(Training training) {
-        Training updatedTraining = trainingDAO.updateTraining(training);
+        Training updatedTraining = trainingRepository.save(training);
         log.info("Training successfully updated");
         return updatedTraining;
     }
@@ -81,9 +94,9 @@ public class TrainingService {
         Trainer trainer = training.getTrainer();
         trainer.getTraineeList().remove(trainee);
         trainee.getTrainerList().remove(trainer);
-        boolean result = trainingDAO.deleteTraining(training);
+        trainingRepository.delete(training);
         log.info("Training successfully deleted");
-        return result;
+        return true;
     }
 
     @Transactional(readOnly = true)
@@ -92,7 +105,8 @@ public class TrainingService {
                                                  Date periodTo,
                                                  String trainerName,
                                                  String trainingTypeName) {
-        List<Training> trainingList = trainingDAO.getTraineeTrainingList(username, periodFrom, periodTo,
+        validateDates(periodFrom, periodTo);
+        List<Training> trainingList = trainingRepository.findByTraineeUserUsernameAndTrainingDateBetweenAndTrainerUserUsernameAndTrainingTypeTrainingTypeName(username, periodFrom, periodTo,
                 trainerName, trainingTypeName);
         log.info("Successfully retrieved trainee's training list");
         return trainingList;
@@ -103,22 +117,36 @@ public class TrainingService {
                                                  Date periodFrom,
                                                  Date periodTo,
                                                  String traineeName) {
-        List<Training> trainingList = trainingDAO.getTrainerTrainingList(username, periodFrom, periodTo, traineeName);
+        validateDates(periodFrom, periodTo);
+        List<Training> trainingList = trainingRepository.findByTrainerUserUsernameAndTrainingDateBetweenAndTraineeUserUsername(username, periodFrom, periodTo, traineeName);
         log.info("Successfully retrieved trainer's training list");
         return trainingList;
     }
 
     @Transactional(readOnly = true)
     public List<Training> getAllTrainings() {
-        List<Training> trainings = trainingDAO.findAllTrainings();
+        List<Training> trainings = trainingRepository.findAll();
         log.info("Retrieved all trainings successfully");
         return trainings;
     }
 
     @Transactional(readOnly = true)
-    public List<TrainingTypeDTO> finaAllTrainingTypes() {
-        List<TrainingType> trainingTypes = trainingDAO.findAllTrainingTypes();
+    public List<TrainingType> finaAllTrainingTypes() {
+        List<TrainingType> trainingTypes = trainingTypeRepository.findAll();
         log.info("Retrieved all training types successfully");
-        return TrainingTypeConverter.convertToDtoList(trainingTypes);
+        return trainingTypes;
+    }
+
+    private void validateDates(Date periodFrom, Date periodTo) {
+        if (periodTo.before(periodFrom)) {
+            String periodFromStr = SIMPLE_DATE_FORMAT.format(periodFrom);
+            String periodToStr = SIMPLE_DATE_FORMAT.format(toString());
+
+            String errorMessage = String.format(
+                    "'Period to' date %s must be after 'period from' date %s",
+                    periodFromStr,
+                    periodToStr);
+            throw new IllegalDateArgumentException(errorMessage);
+        }
     }
 }

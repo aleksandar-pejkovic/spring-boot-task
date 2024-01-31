@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.example.dto.trainer.TrainerEmbeddedDTO;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -14,10 +15,13 @@ public class TraineeDTO {
 
     private long id;
 
+    @NotNull
     private String username;
 
+    @NotNull
     private String firstName;
 
+    @NotNull
     private String lastName;
 
     private Date dateOfBirth;
@@ -26,5 +30,6 @@ public class TraineeDTO {
 
     private boolean isActive;
 
+    @NotNull
     private List<TrainerEmbeddedDTO> trainerEmbeddedDTOList;
 }

@@ -1,45 +1,52 @@
 package org.example.controller;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.Collections;
 
 import org.example.dto.credentials.CredentialsDTO;
 import org.example.enums.RoleName;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
+import org.springframework.test.web.servlet.MockMvc;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+@SpringBootTest
+@AutoConfigureMockMvc
 class LoginControllerTest {
 
-    @InjectMocks
-    private LoginController loginController;
+    private static final String URL_TEMPLATE = "/api/login";
+    private static final String DEFAULT_USERNAME = "John.Doe";
+    private static final String DEFAULT_PASSWORD = "0123456789";
 
-    @Mock
+    private final ObjectMapper objectMapper;
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockBean
     private AuthenticationManager authenticationManager;
 
-    @BeforeEach
-    void setUp() throws Exception {
-        try (AutoCloseable autoCloseable = MockitoAnnotations.openMocks(this)) {
-        }
+    public LoginControllerTest(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
     }
 
     @Test
-    void loginSuccess() throws AuthenticationException {
+    void loginSuccess() throws Exception {
         CredentialsDTO credentialsDTO = CredentialsDTO.builder()
-                .username("John.Doe")
-                .password("0123456789")
+                .username(DEFAULT_USERNAME)
+                .password(DEFAULT_PASSWORD)
                 .build();
 
         Authentication authentication = new UsernamePasswordAuthenticationToken(
@@ -50,29 +57,9 @@ class LoginControllerTest {
 
         when(authenticationManager.authenticate(any())).thenReturn(authentication);
 
-        ResponseEntity<Boolean> result = loginController.login(credentialsDTO);
-
-        verify(authenticationManager, times(1)).authenticate(any());
-        assertEquals(true, result.getBody());
-    }
-
-    @Test
-    void loginFailure() throws AuthenticationException {
-        CredentialsDTO credentialsDTO = CredentialsDTO.builder()
-                .username("John.Doe")
-                .password("0123456789")
-                .build();
-
-        Authentication authentication = new UsernamePasswordAuthenticationToken(
-                credentialsDTO.getUsername(),
-                credentialsDTO.getPassword()
-        );
-
-        when(authenticationManager.authenticate(any())).thenReturn(authentication);
-
-        ResponseEntity<Boolean> result = loginController.login(credentialsDTO);
-
-        verify(authenticationManager, times(1)).authenticate(any());
-        assertEquals(false, result.getBody());
+        mockMvc.perform(post(URL_TEMPLATE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(credentialsDTO)))
+                .andExpect(status().isOk());
     }
 }
